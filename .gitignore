@@ -17,12 +17,16 @@ build/
 
 # IDE files
 .AGENTS
+.claude/
 .vscode/
 .idea/
+.agents/
+.superpowers/
+.codex/
+.mcp.json
 *.swp
 *.swo
 SESSION-LOG.md
-
 # OS files
 .DS_Store
 Thumbs.db
@@ -43,7 +47,10 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 
+# Playwright
+playwright-report/
+test-results/
+
 # Temporary folders
 tmp/
 temp/
-assets/*

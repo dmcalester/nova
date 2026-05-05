@@ -1,0 +1,15 @@
+<!doctype html>
+<html><head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/css/nova-tokens.css">
+  <link rel="stylesheet" href="/css/nova-colors.css">
+  <link rel="stylesheet" href="/css/nova-form-controls.css">
+  <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
+</head><body>
+  <nova-duration id="el" value="PT1H30M"></nova-duration>
+  <nova-duration id="el-required" required></nova-duration>
+  <nova-duration id="el-min-max" value="PT10M" min="PT5M" max="PT20M"></nova-duration>
+  <nova-duration id="el-disabled" value="PT1H" disabled></nova-duration>
+  <nova-duration id="el-readonly" value="PT1H" readonly></nova-duration>
+  <nova-duration id="el-ns" smallest-unit="nanosecond" value="PT1H30M45.123456789S"></nova-duration>
+</body></html>

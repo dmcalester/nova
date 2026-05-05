@@ -1,0 +1,46 @@
+:root {
+   --app-background-color: light-dark(var(--sc-250), var(--sc-900));
+}
+
+
+.nova-shell {
+   position: absolute;
+   display: grid;
+
+   grid-template-rows: 1fr;
+   grid-template-columns: 1fr;
+   grid-template-areas: "main";
+
+   margin: 0;
+   padding: 0;
+
+   height: 100%;
+   width: 100%;
+
+   overflow: hidden;
+
+
+
+   /* Direct children occupy same grid cell to create overlapping layers */
+   > * {
+      grid-area: main;
+   }
+
+   &:has(.nova-classification-marking) {
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+      "classification-marking"
+      "main";
+
+      > .nova-classification-marking {
+         grid-area: classification-marking;
+      }
+   }
+}
+
+
+.nova-app-main {
+   background-color: var(--app-background-color);
+   overflow: auto;
+   height: 100dvh;
+}

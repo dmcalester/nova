@@ -1,0 +1,136 @@
+/*
+  Nova Form Group
+  A Nova Form Group is an opinionated and optional container pattern for form
+  elements. All native input, labels, buttons will adopt this layout regardless
+  of whether they have nova class names.
+
+  Nova Form Group supports input with both vertical and horizontal layouts
+  Nova Form Group works with bare form elements it does not apply any styles
+  to the input elements.
+
+  Nova Form Multi Input Group allows you to have multiple inputs in a single
+  horizontal row
+*/
+
+
+:root {
+   --horizontal-label-column-width: 8ch;
+
+   --vertical-grid-columns: 100%;
+   --vertical-grid-rows: auto;
+   --vertical-grid-areas:
+      "label"
+      "input"
+      "info";
+
+   --horizontal-grid-columns: var(--horizontal-label-column-width) 1fr;
+   --horizontal-grid-rows: auto;
+   --horizontal-grid-areas:
+      "label input"
+      "blank info";
+
+   --label-margin: var(--space-100);
+   --input-margin: var(--space-100);
+   --input-group-margin: var(--space-500);
+   --input-group-padding: 0;
+}
+
+
+.nova-form {
+   display: grid;
+   grid-template-columns: var(--vertical-grid-columns);
+   grid-template-rows: var(--vertical-grid-rows);
+   grid-template-areas: var(--vertical-grid-areas);
+}
+
+
+.nova-field {
+
+   display: grid;
+   grid-template-columns: var(--vertical-grid-columns);
+   grid-template-rows: var(--vertical-grid-rows);
+   grid-template-areas: var(--vertical-grid-areas);
+
+   &:not(:last-child) {
+      margin-block-end: var(--input-group-margin); /* should be handled elsewhere */
+   }
+
+   &:not(.nova-field--horizontal) > label {
+      margin-block-end: var(--label-margin);
+   }
+
+   > label {
+      grid-area: label;
+      display: flex;
+      margin-inline-start: round(down, var(--input-border-radius) / 2, 1px);
+   }
+
+   > input,
+   > textarea,
+   > .nova-control {
+
+      grid-area: input;
+      inline-size: 100%;
+   }
+
+   > .nova-info {
+      grid-area: info;
+      color: var(--label-text-color);
+   }
+}
+
+.nova-field--horizontal {
+   grid-template-columns: var(--horizontal-grid-columns);
+   grid-template-rows: var(--horizontal-grid-rows);
+   grid-template-areas: var(--horizontal-grid-areas);
+   align-items: center;
+
+
+
+   &.right-align-labels {
+      label {
+         justify-self: end;
+         margin-inline-end: var(--label-margin); /* fix */
+      }
+   }
+}
+
+.nova-form-multiline {
+   grid-area: input;
+   display: flex;
+   align-items: flex-start;
+   justify-items: space-between;
+   /*width: 100%;*/
+   gap: var(--input-margin);
+
+   /*
+      It’s possible, but an edge case to use nested nova-fields
+      each with their own label, input field and info elements
+
+      Note multi-input lines may have their own associated labels, but
+      they may not have their own nova-info elements
+
+      */
+
+   .nova-field {
+      margin-block-end: 0;
+   }
+
+   /*
+   This may be superflous now, but if a bug popups in multiline check it out
+   it does resolve a chrome bug in date pickers
+   input {
+      display: flex;
+   }*/
+}
+
+
+.nova-info {
+   font-size: clamp(
+      10px,
+      round(var(--round), var(--font-size) * 0.75, 1px),
+      round(var(--round), var(--font-size) * 0.875, 1px)
+   );
+   margin-block-start: var(--space-100);
+   grid-area: info;
+}

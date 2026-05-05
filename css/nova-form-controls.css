@@ -1,0 +1,334 @@
+:root {
+
+   /* Input Elements */
+   --input-border-color:  light-dark(var(--sc-300), var(--sc-650));
+   --input-border-color--hover: light-dark(var(--sc-350), var(--sc-550));
+   --input-border-color--disabled: light-dark(var(--sc-250), var(--sc-850));
+   --input-border-color--readonly: light-dark(var(--sc-250), var(--sc-900));
+   --input-border-color--invalid: var(--color-invalid-border);
+   --input-border-color--selected: light-dark(var(--sc-400), var(--sc-600));
+   --input-border-color--valid: var(--input-border-color); /* light-dark(var(--sc-700), var(--sc-700)); */
+
+   --input-background-color: light-dark(var(--sc-100), var(--sc-900));
+   --input-background-color--hover: var(--input-background-color);
+   --input-background-color--disabled: light-dark(var(--sc-250), var(--sc-850));
+   --input-background-color--readonly: light-dark(var(--sc-250), var(--sc-850));
+   --input-background-color--invalid: var(--input-background-color);
+   --input-background-color--selected: light-dark(var(--sc-900), var(--sc-100));
+
+   --input-text-color: light-dark(var(--sc-550), var(--sc-300));
+   --input-text-color--hover: light-dark(var(--sc-600), var(--sc-300));
+   --input-text-color--focus: light-dark(var(--sc-900), var(--sc-150));
+   --input-text-color--disabled: light-dark(var(--sc-400), var(--sc-600));
+   --input-text-color--readonly: light-dark(var(--sc-700), var(--sc-500));
+   --input-text-color--invalid: var(--input-text-color);
+   --input-text-color--selected: light-dark(var(--sc-100), var(--sc-900));
+
+   --input-border-width: var(--border-width-100);
+   --input-border-radius: var(--border-radius-500);
+
+   --input-line-height: var(--line-height);
+
+   --input-font-family: var(--font-stack);
+   --input-font-size: var(--font-size-400);
+
+   --input-padding: var(--space-300);
+
+   --input-height: round(
+      var(--round),
+         (var(--input-font-size) * var(--input-line-height)) +
+         ((var(--input-padding) + var(--input-border-width)) * 2),
+      1px
+   );
+
+   /* Label Elements */
+   --label-text-color: light-dark(var(--sc-500), var(--sc-400));
+   --label-text-color--invalid: var(--color-invalid-text);
+   --label-font-size: calc(var(--input-font-size) - 2px);
+   --label-font-weight: var(--font-weight-600);
+
+   /* Group Elements/Overrides */
+   --group-label-text-color: light-dark(var(--sc-550), var(--sc-450));
+   --group-label-text-color--focus: light-dark(var(--sc-650), var(--sc-350));
+   --group-label-text-color--disabled: var(--input-text-color--disabled);
+   --group-label-font-size: calc(var(--label-font-size) - 1px);
+   --group-label-font-weight: var(--font-weight-500);
+   --group-label-width: max-content;
+   --group-label-min-width: 10ch;
+   --group-label-max-width: 20ch;
+
+   --group-border-width: var(--input-border-width);
+   --group-border-radius: var(--input-border-radius);
+
+   --group-border-color: var(--input-border-color);
+   --group-border-color--hover: var(--input-border-color--hover);
+   --group-border-color--disabled: var(--input-border-color--disabled);/* light-dark(var(--sc-150), var(--sc-750)); */
+   --group-border-color--readonly: var(--input-border-color--readonly);
+   --group-border-color--invalid: var(--input-border-color--invalid);
+   --group-border-color--selected: var(--input-border-color--selected);
+   --group-border-color--valid: var(--input-border-color--valid);
+
+   --group-border-row-color: light-dark(var(--sc-250), var(--sc-750));
+   --group-border-row-color--disabled: light-dark(var(--sc-300), var(--sc-750));
+
+   /* Temporal Output Elements */
+   --temporal-output-border-color: var(--input-border-color);
+   --temporal-output-background-color: var(--group-border-color);
+   --temporal-output-text-color: light-dark(var(--sc-550), var(--sc-350));
+   --temporal-output-font-weight: var(--font-weight-normal);
+   --temporal-output-font-size: var(--label-font-size);
+}
+
+
+
+
+/*
+This is pretty bare-bones
+*/
+.nova-form-fieldset {
+
+   border-width: 10px;
+   padding: var(--space-400); /* global prop */
+
+   &:not(:last-child) {
+      margin-block-end: var(--input-group-margin);
+   }
+}
+
+
+.nova-label {
+   display: flex;
+   align-items: center;
+   color: var(--label-text-color);
+   font-size: var(--label-font-size);
+   font-weight: var(--label-font-weight);
+
+   &:has( ~ :is(input, textarea, select):required, ~ .nova-control:state(required))::after {
+      content: "*";
+      margin-inline-start: var(--space-100); /* global prop  */
+      font-weight: bold;
+   }
+}
+
+/* ── CSS Mapping Contract ────────────────────────────────────────────────────
+ *
+ * The states below have shadow DOM equivalents maintained in parallel.
+ * When editing a state here, check its counterpart:
+ *
+ *   Cursor / interaction states  →  novaInputStatesSheet in nova-stylesheets.js
+ *   Visual chrome per state      →  each component's local CSSStyleSheet
+ *                                   (nova-segment-input-base.js, nova-temporal-group.js)
+ *
+ * Shadow DOM rules carry a plain inline comment of the form
+ * "mirrors <selector> in nova-form-controls.css" pointing back here. Native
+ * rules below are marked with @shadow-dom-equivalent pointing there.
+ */
+
+/* Boxed Inputs */
+/*:is(.nova-input, .nova-select, .nova-textarea, .nova-button) {*/
+
+.nova-input,
+.nova-select,
+.nova-textarea {
+   appearance: none;
+   font-family: var(--font-stack); /* global prop */
+   font-size: var(--input-font-size);
+   line-height: var(--input-line-height);
+
+   padding: var(--input-padding);
+
+   border-radius: var(--input-border-radius);
+   border-color: var(--input-border-color);
+   border-style: solid;
+   border-width: var(--input-border-width);
+
+   color: var(--input-text-color);
+   background-color: var(--input-background-color);
+
+   height: var(--input-height);
+   width: var(--input-width);
+
+   transition: var(--transition-input-out); /* global prop */
+
+
+   /* Invalid (immediate, before interaction) */
+   &:invalid {
+      border-color: var(--input-border-color);
+   }
+
+   /* User-invalid (after interaction) — more prominent */
+   &:user-invalid,
+   &:out-of-range {
+      color: var(--input-text-color--invalid);
+      border-color: var(--input-border-color--invalid);
+      background-color: var(--input-background-color--invalid);
+   }
+
+   /* Valid states — use valid border color */
+   &:valid {
+      border-color: var(--input-border-color--valid);
+   }
+
+   &:not(:disabled):hover:not(:user-invalid):not(:out-of-range):not(:invalid):not(:readonly) {
+      color: var(--input-text-color--hover);
+      background-color: var(--input-background-color--hover);
+      border-color: var(--input-border-color--hover);
+      transition: var(--transition-input-in); /* global prop */
+   }
+
+   /*
+      this might exist at a global level rather than
+      at the input
+   */
+
+   /* @shadow-dom-equivalent: :host(:focus-within) — component local sheets
+    * Note: native uses :focus-visible (keyboard only); shadow DOM uses
+    * :focus-within (any child focus). Target element also differs per component. */
+   &:focus-visible {
+      outline-width: var(--border-width-100); /* global prop */
+      outline-style: solid;
+      outline-color: var(--color-focus-ring);
+      outline-offset: 2px; /* magic-ish number */
+      color: var(--input-text-color--focus); /* global prop */
+   }
+
+   /* @shadow-dom-equivalent: :host([disabled]) — novaInputStatesSheet (cursor/pointer-events)
+    *                          :host([disabled]) .inner — component local sheets (visual chrome) */
+   &:disabled {
+      color: var(--input-text-color--disabled);
+      background-color: var(--input-background-color--disabled);
+      border-color: var(--input-border-color--disabled);
+      cursor: not-allowed;
+   }
+
+   &::selection {
+       background-color: var(--input-background-color--selected);
+       color: var(--input-text-color--selected);
+   }
+
+   /* @shadow-dom-equivalent: :host([readonly]) — novaInputStatesSheet */
+   &:read-only {
+      cursor: magnify-glass;
+   }
+
+   &[readonly] {
+      pointer-events: none;
+   }
+}
+
+input[type=color] {
+   appearance: none;
+   padding: 0;
+
+   width: unset;
+   height: var(--input-height);
+   aspect-ratio: 1/1;
+
+   overflow: hidden;
+
+}
+
+::-webkit-color-swatch-wrapper {
+   padding: 0;
+}
+
+::-webkit-color-swatch {
+   border: none;
+}
+
+
+
+/*
+   Chrome/Safari Hacks Fixes
+   Chrome adds some weird padding with date inputs. Also doesn’t adjust for dark bgs
+
+*/
+
+input[type="date"],
+input[type="month"],
+input[type="week"],
+input[type="time"],
+input[type="datetime-local"] {
+
+   /* These rules should probably me moved to a custom prop */
+   font-variant-numeric: tabular-nums;
+   /*font-feature-settings: "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv11", "cv10";*/
+   &:is(.nova-input) {
+
+      /* TODO need to check for dark mode vs. light mode since this fixes the icon on dark input backgrounds */
+      &::-webkit-calendar-picker-indicator {
+         /*filter: invert(1);*/
+         padding: 0;
+      }
+   }
+}
+
+/*
+   There are text-indent bugs with Chrome/Safari’s date inputs they present differently
+   but are solved the same way by setting text-indent to 0 of shadow DOM elements. This
+   is super brittle, but it works. It also seems to fix the height issue fixed in the above code
+*/
+
+
+
+/*input::-webkit-datetime-edit-fields-wrapper,
+input::-webkit-datetime-edit-month-field,
+input::-webkit-datetime-edit-day-field,
+input::-webkit-datetime-edit-year-field,
+input::-webkit-datetime-edit-hour-field,
+input::-webkit-datetime-edit-minute-field,
+input::-webkit-datetime-edit-second-field,
+input::-webkit-datetime-edit-ampm-field,
+input::-webkit-datetime-edit-meridiem-field {
+
+
+}*/
+
+
+
+
+input::-webkit-datetime-edit,
+input::-webkit-datetime-edit-fields-wrapper,
+input::-webkit-datetime-edit-month-field,
+input::-webkit-datetime-edit-day-field,
+input::-webkit-datetime-edit-year-field,
+input::-webkit-datetime-edit-hour-field,
+input::-webkit-datetime-edit-minute-field,
+input::-webkit-datetime-edit-second-field,
+input::-webkit-datetime-edit-ampm-field,
+input::-webkit-datetime-edit-meridiem-field {
+   padding: unset;
+   margin: unset;
+   text-indent: 0;
+
+
+   &:focus {
+      &::selection {
+          background-color: yellow;
+          color: black;
+      }
+   }
+
+   &:focus {
+       background-color: yellow;
+       color: black;
+   }
+
+
+
+   &::-internal-autofill-selected {
+      border: 1px solid #ccc !important;
+      background-color: #f0f0f0 !important;
+      color: #000;
+   }
+}
+
+
+.output-label {
+  font-weight: var(--font-weight-normal);
+
+  &::after {
+    content: ":";
+    margin-inline-end: 0.25em;
+  }
+}

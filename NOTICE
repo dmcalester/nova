@@ -1,0 +1,49 @@
+# NOTICE
+
+This NOTICE file accompanies the nova-temporal library and identifies
+third-party materials redistributed with it. The library itself is licensed
+under CC BY-NC-SA 4.0; see LICENSE.md. Bundled third-party materials are
+included under the terms described below.
+
+## Third-Party Sources
+
+The `ai/references/` directory contains Markdown extracts of publicly available
+standards documents and reference materials, bundled with this library so the
+`satops-time` agent can operate without network access. Each extract carries a
+YAML frontmatter block with provenance (source URL, document ID, fetch date,
+sha256 of source) and an attribution notice.
+
+### CCSDS publications
+
+The following CCSDS documents are included as text extracts of the official
+PDFs published by the Consultative Committee for Space Data Systems
+(<https://ccsds.org/>):
+
+- CCSDS 301.0-B-4, *Time Code Formats* (Blue Book)
+- CCSDS 502.0-B-3, *Orbit Data Messages* (Blue Book)
+- CCSDS 503.0-B-2 Cor. 1, *Tracking Data Message* (Blue Book + Corrigendum 1)
+- CCSDS 500.2-G-3, *Navigation Data Messages Overview* (Green Book)
+
+Inclusion is per the CCSDS Reproduction Permission Statement
+(<https://ccsds.org/publications/>): *"In general, reasonable reuse of materials
+published in CCSDS documents is permitted with attribution, and reprint
+permission can be provided in writing for those organizations that require
+formal permission statements."* Organizations needing formal written permission
+should contact <secretariat@mailman.ccsds.org>. The original CCSDS documents at
+the URLs in each extract's header are authoritative; the bundled extracts are
+derivative works for reference convenience.
+
+### NAIF/JPL SPICE documentation
+
+The bundled `naif-spice-time.md` is the *Time Systems Required Reading*
+document from the NAIF SPICE toolkit (<https://naif.jpl.nasa.gov/>). Inclusion
+is authorized under NAIF rules
+(<https://naif.jpl.nasa.gov/naif/rules.html>), which permit redistribution of
+SPICE documentation as part of third-party tools.
+
+## Refreshing the Bundle
+
+Run `scripts/update-references.sh` to re-fetch and re-extract the bundled
+references. The script is idempotent (skips files whose source sha256 matches)
+and is intended for maintainers updating the bundle, not for consumers of this
+library.

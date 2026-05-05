@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Nova — Temporal Components</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="/css/nova-tokens.css" />
+    <link rel="stylesheet" href="/css/nova-colors.css" />
+    <link rel="stylesheet" href="/css/nova.css" />
+    <link rel="stylesheet" href="/css/nova-form-patterns.css" />
+    <link rel="stylesheet" href="/css/nova-form-controls.css" />
+    <link rel="stylesheet" href="/css/components/nova-card.css" />
+
+    <script type="module" src="/js/nova-temporal/nova-time.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-date.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-clock.js"></script>
+
+
+    <style>
+
+      .nova-grid {
+         padding: 1rem;
+         display: grid;
+         gap: 1rem;
+         grid-template-columns: 1fr 1fr;
+      }
+
+    </style>
+
+  </head>
+  <body class="nova-grid">
+
+     <div class="nova-card">
+        <header><h2>Temporal Components</h2></header>
+
+
+        <div class="nova-field">
+           <label class="nova-label" for="control-1">Standard Input</label>
+           <input type="datetime-local" required id="control-1"  class="nova-input" >
+        </div>
+
+
+        <div class="nova-field">
+           <label class="nova-label" for="temporal-1">Nanosecond Datetime</label>
+           <nova-datetime
+              id="temporal-1"
+              class="nova-control"
+              smallest-unit="nanosecond"
+              value="2026-02-09T14:30Z"
+              min="2026-02-07T00:00Z"
+              max="2026-02-11T00:00Z"
+              hotkeys
+              required></nova-datetime>
+        </div>
+
+        <div class="nova-field">
+           <label class="nova-label" for="temporal-3">Duration</label>
+           <nova-duration
+              id="temporal-3"
+              class="nova-control"
+              largest-unit="hour"
+              largest-unit-digits="3"
+              smallest-unit="second"
+
+              min="PT1H"
+              hotkeys
+              required></nova-duration>
+        </div>
+
+         <div class="nova-field">
+            <label class="nova-label" for="temporal-2">Start/End Time</label>
+            <nova-temporal-group class="nova-control" id="temporal-2" max="PT30m">
+               <label slot="t0-label" for="temporal-2-t0">Start</label>
+               <nova-datetime slot="t0" id="temporal-2-t0" smallest-unit="second" value="2026-100T14:30Z" min="2026-099T00:00Z" hotkeys></nova-datetime>
+               <label slot="t1-label" for="temporal-2-t1">End</label>
+               <nova-datetime slot="t1" id="temporal-2-t1" smallest-unit="second" value="2026-100T15:30Z" max="2026-110T15:30Z" hotkeys></nova-datetime>
+               <output class="group-output" slot="output"><span class="output-label">Duration</span><span class="output-value"></span></output>
+            </nova-temporal-group>
+         </div>
+
+         <div class="nova-field">
+            <label class="nova-label" for="duration">Duration</label>
+            <nova-temporal-group class="nova-control" id="duration" max="2026-04-01T14:30Z">
+               <label slot="t0-label" for="duration-t0">Start</label>
+               <nova-datetime format="ordinal" slot="t0" id="duration-t0" smallest-unit="minute" value="2026-02-28T14:30Z" max="2027-02-27T00:00Z" min="2026-01-02T00:00Z" hotkeys></nova-datetime>
+               <label slot="d0-label" for="duration-d0">For</label>
+               <nova-duration slot="d0" id="duration-d0" smallest-unit="nanosecond" value="PT15M" min="PT5M" max="PT20M"></nova-duration>
+               <output class="group-output" slot="output"><span class="output-label">End Datetime</span><span class="output-value"></span></output>
+            </nova-temporal-group>
+         </div>
+
+         <!-- nova-temporal-group with NEW slot naming (t0, d0, t1) -->
+         <div class="nova-field">
+            <label class="nova-label" for="multi-step">Multi Step</label>
+            <nova-temporal-group class="nova-control" id="multi-step">
+               <label slot="t0-label" for="mult-step-t0">Start</label>
+               <nova-datetime slot="t0" id="mult-step-t0" smallest-unit="millisecond" value="2026-02-09T14:30Z" hotkeys></nova-datetime>
+               <label slot="d0-label" for="mult-step-d0">Burn</label>
+               <nova-duration slot="d0" id="mult-step-d0" largest-unit="year" smallest-unit="millisecond" value="PT15M" min="PT45S" max="PT3H"></nova-duration>
+               <label slot="d1-label" for="mult-step-d1">Pause</label>
+               <nova-duration slot="d1" id="mult-step-d1" largest-unit="hour" largest-unit-digits="4" smallest-unit="millisecond" value="PT15M" min="PT45S" max="PT3H"></nova-duration>
+               <label slot="d3-label" for="mult-step-d3">Burn</label>
+               <nova-duration slot="d3" id="mult-step-d3" largest-unit="hour" smallest-unit="millisecond" value="PT15M" min="PT45S" max="PT300H"></nova-duration>
+               <label slot="d4-label" for="mult-step-d4">Cool Down</label>
+               <nova-duration slot="d4" id="mult-step-d4" largest-unit="hour" smallest-unit="millisecond" value="PT1H30M" min="PT1H"></nova-duration>
+               <output class="group-output" slot="output"><span class="output-label">End Datetime</span><span class="output-value"></span></output>
+
+            </nova-temporal-group>
+         </div>
+
+
+
+
+
+
+     </div>
+
+     <div class="nova-card" style="color-scheme: light;">
+        <header><h2>Temporal Components (Light Theme)</h2></header>
+
+        <div class="nova-field">
+           <label class="nova-label" for="control-1-light">Standard Input</label>
+           <input type="text" required id="control-1-light" class="nova-input" >
+        </div>
+
+        <div class="nova-field">
+           <label class="nova-label" for="temporal-light-1">Nanosecond Datetime</label>
+           <nova-datetime
+              id="temporal-light-1"
+              class="nova-control"
+              smallest-unit="nanosecond"
+              value="2026-02-09T14:30Z"
+              min="2026-02-07T00:00Z"
+              max="2026-02-11T00:00Z"
+              hotkeys
+              required></nova-datetime>
+        </div>
+
+        <div class="nova-field">
+           <label class="nova-label" for="temporal-2">Start/End Time</label>
+           <nova-temporal-group class="nova-control" id="temporal-2-light">
+              <label slot="t0-label" for="temporal-2-t0">Start</label>
+              <nova-datetime slot="t0" id="temporal-2-t0" smallest-unit="second" value="2026-100T14:30Z" min="2026-099T00:00Z" hotkeys></nova-datetime>
+              <label slot="t1-label" for="temporal-2-t1">End</label>
+              <nova-datetime slot="t1" id="temporal-2-t1" smallest-unit="second" value="2026-100T15:30Z" max="2026-110T15:30Z" hotkeys></nova-datetime>
+              <output class="group-output" slot="output"><span class="output-label">Duration</span><span class="output-value"></span></output>
+           </nova-temporal-group>
+        </div>
+
+        <div class="nova-field">
+           <label class="nova-label" for="duration-light">Duration</label>
+           <nova-temporal-group class="nova-control" id="duration-light" max="2027-03-01T14:30Z">
+              <label slot="t0-label" for="duration-light-t0">Start</label>
+              <nova-datetime slot="t0" id="duration-light-t0" smallest-unit="minute" value="2026-02-02T14:30Z" max="2027-04-02T00:00Z" min="2026-01-02T00:00Z" hotkeys></nova-datetime>
+              <label slot="d0-label" for="duration-light-d0">For</label>
+              <nova-duration slot="d0" id="duration-light-d0" smallest-unit="nanosecond" value="PT15M" min="PT5M" max="PT20M"></nova-duration>
+              <output class="group-output" slot="output"><span class="output-label">End Datetime</span><span class="output-value"></span></output>
+           </nova-temporal-group>
+        </div>
+     </div>
+
+  </body>
+</html>

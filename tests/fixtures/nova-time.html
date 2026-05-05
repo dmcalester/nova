@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/css/nova-tokens.css">
+  <link rel="stylesheet" href="/css/nova-colors.css">
+  <link rel="stylesheet" href="/css/nova-form-controls.css">
+  <script type="module" src="/js/nova-temporal/nova-time.js"></script>
+</head><body>
+  <nova-time id="el" value="14:30:00Z"></nova-time>
+  <nova-time id="el-required" required></nova-time>
+  <nova-time id="el-min-max" value="14:30:00Z" min="08:00:00Z" max="18:00:00Z"></nova-time>
+  <nova-time id="el-disabled" value="14:30:00Z" disabled></nova-time>
+  <nova-time id="el-readonly" value="14:30:00Z" readonly></nova-time>
+  <nova-time id="el-ms" smallest-unit="millisecond" value="14:30:00.000Z"></nova-time>
+  <nova-time id="el-ns" smallest-unit="nanosecond" value="14:30:00.000000000Z"></nova-time>
+</body></html>

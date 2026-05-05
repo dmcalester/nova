@@ -1,0 +1,149 @@
+:root {
+
+   color-scheme: light dark;
+
+   --round: up;
+
+   --base-font-size: 0.875rem;
+   --base-line-height: 1.2;
+
+   /* Default base settings */
+   --font-size: var(--font-300, 0.875rem);
+   --line-height: 1.2;
+
+   /* Magic numbers for density */
+   --compact: 6;
+   --normal: 4;
+   --default: var(--normal);
+   --open: 3;
+
+   --density: var(--default, 4);
+
+   /* z-index */
+
+   --z-0: 0;
+   --z-000: var(--z-0);
+   --z-100: 100;
+   --z-200: 200;
+   --z-300: 300;
+   --z-400: 400;
+   --z-500: 500;
+   --z-600: 600;
+   --z-700: 700;
+   --z-800: 800;
+   --z-900: 900;
+
+   /* SEMANTIC Z-INDEX */
+   --z-under: var(--z-0);
+   --z-bottom: var(--z-100);
+   --z-top: var(--z-900);
+
+
+   /* SPACING */
+   --space-unit: round(var(--round), var(--base-font-size) / var(--density), 1px);
+   --space-0: 0;
+   --space-000: var(--space-0);
+   --space-100: var(--space-unit); /* Base unit */
+   --space-200: round(var(--round), var(--space-unit) * 1.5, 1px); /* 1.5x */
+   --space-300: round(var(--round), var(--space-unit) * 2, 1px); /* 2x */
+   --space-400: round(var(--round), var(--space-unit) * 3, 1px); /* 3x */
+   --space-500: round(var(--round), var(--space-unit) * 5, 1px); /* 5x */
+   --space-600: round(var(--round), var(--space-unit) * 8, 1px); /* 8x */
+   --space-700: round(var(--round), var(--space-unit) * 13, 1px); /* 13x */
+   --space-800: round(var(--round), var(--space-unit) * 21, 1px); /* 21x */
+   --space-900: round(var(--round), var(--space-unit) * 34, 1px); /* 34x */
+
+
+   /* FONTS */
+   /*
+      system-ui
+      Windows: Segoe UI
+      Linux: Ubuntu or Cantarell (Gnome) or  Noto Sans (KDE) or  Noto Sans CJK
+      Mac: San Francisco
+      Android: Roboto
+   */
+
+   --font-stack: system-ui, system-ui, "Segoe UI-VF", "Segoe UI", "Segoe",  sans-serif;
+   --font-stack--monospace:
+      ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+      "DejaVu Sans Mono", monospace;
+   --font-stack--rounded:
+      ui-rounded, "Hiragino Maru Gothic ProN", Quicksand, Comfortaa, Manjari,
+      "Arial Rounded MT", "Arial Rounded MT Bold", Calibri, source-sans-pro,
+      sans-serif;
+
+
+   --font-size-100: round(var(--round), var(--base-font-size) * 1.25, 1px);
+   --font-size-200: round(var(--round), var(--base-font-size) * 1.25, 1px);
+   --font-size-300: round(var(--round), var(--base-font-size) * 1.25, 1px);
+   --font-size-400: var(--base-font-size);
+   --font-size-500: round(var(--round), var(--base-font-size) * 1.125, 1px); /* 1.25x */
+   --font-size-600: round(var(--round), var(--base-font-size) * 1.25, 1px); /* 1.25x */
+   --font-size-700: round(var(--round), var(--base-font-size) * 1.563, 1px); /* 1.563x */
+   --font-size-800: round(var(--round), var(--base-font-size) * 1.953, 1px); /* 1.953x */
+   --font-size-900: round(var(--round), var(--base-font-size) * 2.441, 1px); /* 2.441x */
+
+
+
+   --font-weight-100: 100;
+   --font-weight-200: 200;
+   --font-weight-300: 300;
+   --font-weight-400: 420;
+   --font-weight-500: 500;
+   --font-weight-600: 600;
+   --font-weight-700: 700;
+   --font-weight-800: 800;
+   --font-weight-900: 900;
+
+   /* BORDER */
+   --border-width-100: 1px;
+   --border-width-200: 2px;
+   --border-width-300: 4px;
+
+   /* BORDER RADIUS - Scaled system using px base */
+   --radius-unit: 1px;
+   --border-radius-0: 0px;
+   --border-radius-000: var(--border-radius-0);
+   --border-radius-100: 1px;                             /* 1px - smallest radius */
+   --border-radius-200: calc(var(--radius-unit) * 2);    /* 3px - your current default */
+   --border-radius-300: calc(var(--radius-unit) * 3);    /* 3px - your current default */
+   --border-radius-400: calc(var(--radius-unit) * 4);    /* 4px - standard buttons */
+   --border-radius-500: calc(var(--radius-unit) * 6);    /* 6px - cards, inputs */
+   --border-radius-600: calc(var(--radius-unit) * 9);    /* 8px - larger cards */
+   --border-radius-700: calc(var(--radius-unit) * 12);   /* 12px - modals, panels */
+   --border-radius-800: calc(var(--radius-unit) * 16);   /* 16px - hero sections */
+   --border-radius-900: 999px;   /* fully rounded/pill - pills */
+   --border-radius-pill: var(--border-radius-900);
+
+   /* COLOR */
+   --color-white: oklch(100% 0 0);
+   --color-black: oklch(0% 0 0);
+
+   --text-color: light-dark(var(--sc-200), var(--sc-800));
+   --color-focus-ring: light-dark(var(--sc-900), var(--sc-100));
+
+
+   --color-invalid: light-dark(var(--red-600), var(--red-500));
+   --color-invalid-text: light-dark(var(--red-600), var(--red-550));
+   --color-invalid-border: light-dark(var(--red-600), var(--red-550));
+
+   --error-background-color: oklch(from var(--red-500) calc(l - round(down, l, 0.1) + 0.898) calc(c - .17) h);
+   --color-invalid-background: light-dark(var(--error-background-color), var(--red-900));
+
+
+   --transition-duration-base: 167ms;
+   --transition-in-duration: calc(var(--transition-duration-base) / 1.25);
+   --transition-out-duration: calc(var(--transition-in-duration) * 1.5);
+
+   --transition-input-in: border-color var(--transition-in-duration) ease-in;
+   --transition-input-out: border-color var(--transition-out-duration) ease-out;
+
+   --transition-rotate-180: var(--transition-duration-base) rotate;
+
+
+   @media (prefers-reduced-motion) {
+      --transition-duration-base: 0;
+      --transition-in-duration: 0;
+      --transition-out-duration: 0;
+   }
+}

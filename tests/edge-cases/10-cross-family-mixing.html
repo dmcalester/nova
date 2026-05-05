@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/css/nova-tokens.css">
+<link rel="stylesheet" href="/css/nova-colors.css">
+<link rel="stylesheet" href="/css/nova-form-controls.css">
+<script type="module" src="/js/nova-temporal/nova-date.js"></script>
+<script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
+<script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
+<script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+<style>body { padding: 2rem; }</style>
+</head><body>
+<!-- Cross-family: nova-datetime + nova-date (invalid combination) -->
+<nova-temporal-group id="cross-1">
+  <nova-datetime slot="t0" value="2026-04-09T14:00:00Z"></nova-datetime>
+  <nova-date slot="t1" value="2026-04-10"></nova-date>
+  <output slot="output"><span class="output-label">Cross-Family (Warning)</span><span class="output-value"></span></output>
+</nova-temporal-group>
+<!-- Within date family: nova-date + nova-ordinal-date (valid) -->
+<nova-temporal-group id="same-family">
+  <nova-date slot="t0" value="2026-04-09"></nova-date>
+  <nova-ordinal-date slot="t1" value="2026-120"></nova-ordinal-date>
+  <output slot="output"><span class="output-label">Same Family (OK)</span><span class="output-value"></span></output>
+</nova-temporal-group>
+</body></html>

@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/css/nova-tokens.css">
+  <link rel="stylesheet" href="/css/nova-colors.css">
+  <link rel="stylesheet" href="/css/nova-form-controls.css">
+  <script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
+  <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
+  <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+</head><body>
+  <nova-temporal-group id="group">
+    <label slot="t0-label">Start</label>
+    <nova-datetime slot="t0" id="t0" value="2026-04-09T14:00:00Z"></nova-datetime>
+    <label slot="d0-label">Duration</label>
+    <nova-duration slot="d0" id="d0" value="PT2H"></nova-duration>
+    <label slot="t1-label">End</label>
+    <nova-datetime slot="t1" id="t1"></nova-datetime>
+    <output slot="output"><span class="output-label">End Time</span><span class="output-value"></span></output>
+  </nova-temporal-group>
+</body></html>

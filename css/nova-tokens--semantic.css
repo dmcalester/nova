@@ -1,0 +1,19 @@
+/*
+  Nova Semantic Tokens
+  Optional and experimental semantic token layer for Nova UI components.
+*/
+
+
+:root {
+
+   /* SEMANTIC Z-INDEX */
+   --z-under: var(--z-0);
+   --z-bottom: var(--z-100);
+   --z-top: var(--z-900);
+
+   --font-xs: var(--font-size-200);
+   --font-sm: var(--font-size-300);
+   --font-md: var(--font-size-400);
+   --font-lg: var(--font-size-500);
+   --font-xl: var(--font-size-600);
+}

@@ -1,0 +1,92 @@
+/* Rux Card Component with Container Queries */
+
+:root {
+
+   --card-background-color: light-dark(var(--sc-200), var(--sc-800)) ;
+}
+
+
+.nova-card {
+   /* Make this element a container for container queries */
+   container-type: inline-size;
+   container-name: card;
+
+
+
+   /* Default card styles */
+
+   /*border: 1px solid var(--border-elevated);*/
+   border-radius: var(--border-radius-700, 12px);
+   padding-block: var(--space-500);
+   padding-inline: var(--space-400);
+
+   color: var(--color-text);
+
+   padding-inline: .75rem;
+   font-size: 0.875rem;
+   display: block;
+   height: 100%;
+   flex-direction: column;
+   justify-content: start;
+   background-color: var(--card-background-color);
+   color: light-dark(var(--sc-800), var(--sc-200));
+
+   header, footer {
+
+
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: .1rem .5rem;
+
+
+
+      h1 {
+         font-size: 1rem;
+
+      }
+
+      i {
+         color: light-dark(var(--ac-650), var(--ac-350));
+      }
+   }
+
+}
+
+/* Container query - when card width is below 300px */
+@container card (min-width: 299px) {
+   .nova-card {
+      /* Compact styles for narrow cards */
+      padding-block-end: var(--spacing-2, 0.5rem);
+      font-size: var(--font-size-sm, 0.875rem);
+      background: #0f1e2a; /* Darker background for narrow cards */
+      border-color: blue !important;
+   }
+
+   .nova-card__title {
+      font-size: var(--font-size-base, 1rem);
+      margin-block-end: var(--spacing-1, 0.25rem);
+   }
+
+   .nova-card__content {
+      /* Stack content vertically in narrow cards */
+      flex-direction: column;
+      gap: var(--spacing-2, 0.5rem);
+   }
+}
+
+/* Example: Grid container with responsive columns */
+.card-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+   gap: 1rem;
+}
+
+/*
+  When .nova-card is in a grid:
+  - Each card becomes a container query context
+  - Cards respond to their individual cell width
+  - If a grid cell becomes < 300px wide, that specific card adapts
+  - Other cards in wider cells maintain default styles
+*/

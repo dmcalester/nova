@@ -1,0 +1,56 @@
+/*
+ * Nova CSS
+ * Global Styles for Nova Applications
+ */
+
+html {
+  /* handle scrollbar layout shift */
+  scrollbar-gutter: stable both-edges;
+}
+
+
+body {
+   height: 100vh;
+   width: 100vw;
+
+   font-family: var(--font-stack);
+
+   line-height: var(--line-height);
+   color: var(--text-color);
+
+   -webkit-font-smoothing: antialiased;
+   -webkit-text-size-adjust: 100%;
+   -moz-osx-font-smoothing: grayscale;
+   font-optical-sizing: auto;
+   text-rendering: optimizeLegibility;
+   font-smooth: always;
+
+   font-feature-settings:
+      "cv01", /* open 6 */
+      "cv02", /* open 4 */
+      "cv03", /* letter? */
+      "cv04", /* baseline shifted colon */
+      "cv06",
+      "cv07", /* single story a */
+      "cv08", /* slashed zero */
+      "cv09",
+      "cv11",
+      "cv10",
+      "ss04",
+      "zero" 1;
+
+   /*font-variant-numeric: slashed-zero;*/
+
+   margin: 0;
+   padding: 0;
+}
+
+*,
+*::before,
+*::after {
+   box-sizing: border-box;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
