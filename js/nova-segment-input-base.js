@@ -14,6 +14,7 @@
  */
 
 import { createNovaInputStyleSheets } from "./nova-stylesheets.js";
+import { reportNovaError } from "./nova-temporal/nova-temporal-errors.js";
 
 const DIGIT_RE = /^\d$/;
 
@@ -243,9 +244,11 @@ export class NovaSegmentInputBase extends HTMLElement {
          try {
             this.parseAndSet(val);
          } catch (e) {
-            console.warn(
-               `[${this.tagName.toLowerCase()}] value="${val}" did not parse — rendering placeholders.`,
-               e?.message,
+            reportNovaError(
+               this,
+               "value-parse-error",
+               `value="${val}" did not parse — rendering placeholders.`,
+               { input: val, error: e },
             );
          }
       }
@@ -303,9 +306,11 @@ export class NovaSegmentInputBase extends HTMLElement {
                try {
                   this.parseAndSet(newVal);
                } catch (e) {
-                  console.warn(
-                     `[${this.tagName.toLowerCase()}] value="${newVal}" did not parse — rendering placeholders.`,
-                     e?.message,
+                  reportNovaError(
+                     this,
+                     "value-parse-error",
+                     `value="${newVal}" did not parse — rendering placeholders.`,
+                     { input: newVal, error: e },
                   );
                   this.#initDefaults();
                }
@@ -532,6 +537,10 @@ export class NovaSegmentInputBase extends HTMLElement {
     * @returns {string}
     */
    get formattedValue() {
+      return "";
+   }
+
+   _rawFormattedValue() {
       return "";
    }
    /**
@@ -835,6 +844,14 @@ export class NovaSegmentInputBase extends HTMLElement {
    _onSegmentValueChanged(_index, _name) {}
 
    /**
+    * Hook: called when a paste operation fails. Override to surface errors.
+    *
+    * @param {'parse-error'|'range'} _type
+    * @param {string} _text - the pasted string
+    */
+   _onPasteError(_type, _text) {}
+
+   /**
     * Hook: dynamic upper bound for a segment. Override to compute a max
     * that depends on other segments (e.g. days in month based on current
     * month/year).
@@ -979,7 +996,13 @@ export class NovaSegmentInputBase extends HTMLElement {
       e.preventDefault();
       if (this.hasAttribute("disabled")) return;
       if (this.#segmentEmpty.some((e) => e)) return;
-      e.clipboardData.setData("text/plain", this.formattedValue);
+      let text;
+      try {
+         text = this.formattedValue;
+      } catch {
+         text = this._rawFormattedValue();
+      }
+      if (text) e.clipboardData.setData("text/plain", text);
    };
 
    #onPaste = (e) => {
@@ -1015,11 +1038,20 @@ export class NovaSegmentInputBase extends HTMLElement {
       if (this.hasAttribute("pattern")) {
          this._parseStrictValue(trimmed);
       } else {
-         this._parsePasteValue(trimmed);
+         try {
+            this._parsePasteValue(trimmed);
+         } catch {
+            this._onPasteError("parse-error", trimmed);
+            return;
+         }
       }
       if (this.formattedValue !== before) {
          this.#render();
          this.#syncAndNotify();
+         const v = this.#internals.validity;
+         if (v.rangeOverflow || v.rangeUnderflow) {
+            this._onPasteError("range", trimmed);
+         }
          this.dispatchEvent(
             new Event("change", { bubbles: true, composed: true }),
          );

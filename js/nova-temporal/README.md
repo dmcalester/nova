@@ -2,7 +2,7 @@
 
 Custom elements for date, time, duration, and datetime input — built on the [Temporal API](https://tc39.es/proposal-temporal/docs/) for nanosecond-precision UTC operations. ISO 8601 strings are the boundary format (HTML attributes, form submission, serialization); `Temporal.*` objects are the programmatic currency for in-memory work and helper composition.
 
-Requires Temporal API support (Chrome 137+, Firefox 139+) or a polyfill.
+Requires Temporal API support (Chrome 144+, Firefox 139+) or a polyfill.
 
 ## Audience
 
@@ -11,7 +11,7 @@ These components target operating environments where time is precise and consequ
 They are not designed for casual booking flows or consumer-facing date pickers. Locale-aware presentation, calendar popovers, and time-zone selection are out of scope. If your application asks "what date works for you?", reach for a more general-purpose component.
 
 >[!NOTE]
-> Nova’s Temporal implementation explicitly restricts its domain to UTC/Zulu implemented through Temporal’s [PlainDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/PlainDateTime) rather than [ZonedDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/ZonedDateTime) this was intentionally defensive by design. PlainDateTime is less complex. All datetimes in Nova are treated as UTC/Z. In strict mode datetimes without the UTC/Z timezone will throw an error, in fuzzy mode times without timzone will throw a warning
+> Nova’s Temporal implementation explicitly restricts its domain to UTC/Zulu implemented through Temporal’s [PlainDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/PlainDateTime) rather than [ZonedDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/ZonedDateTime) this was intentionally defensive by design. PlainDateTime is less complex. All datetimes in Nova are treated as UTC/Z.
 
 ## Components
 
@@ -121,7 +121,6 @@ UTC/Zulu time input with configurable smallest unit.
 | `disabled` | boolean | — | Disables input |
 | `readonly` | boolean | — | Prevents editing, allows navigation |
 | `hotkeys` | boolean | — | Enables `n` key (set to now) |
-| `pattern` | boolean | — | Strict paste mode (only native format accepted) |
 
 ### Value Format
 
@@ -137,7 +136,6 @@ Always UTC with Z suffix: `"14:30:00Z"`, `"14:30:00.123Z"`, `"14:30:00.123456789
 
 - Native time strings accepted directly
 - Datetime strings: extracts time part (`2026-02-09T14:30:00Z` → `14:30:00Z`)
-- With `pattern` attribute: only accepts native time format
 
 ---
 
@@ -157,21 +155,19 @@ Calendar date input with leap year awareness.
 | `disabled` | boolean | — | Disables input |
 | `readonly` | boolean | — | Prevents editing |
 | `hotkeys` | boolean | — | Enables `n` key (set to now) |
-| `pattern` | boolean | — | Strict paste mode (only native format accepted) |
-| `overflow` | `reject` `constrain` | `reject` | Segment edits that create invalid dates remain visible and invalid by default; `constrain` restores clamping |
+| `overflow` | `constrain` `reject` | `constrain` | `reject` keeps invalid segment combinations visible and marks the component invalid; default `constrain` clamps to the nearest valid date (matching Temporal's own default) |
 
 ### Value Format
 
 `"YYYY-MM-DD"` — e.g. `"2026-02-09"`
 
-By default, invalid segment combinations remain visible and set component validity. For example, changing `2026-01-31` to February leaves day `31` visible and invalid instead of clamping to `28`. Set `overflow="constrain"` to restore clamping behavior.
+By default, invalid segment combinations are clamped to the nearest valid date — matching Temporal's own default. For example, changing `2026-01-31` to February clamps day `31` to `28`. Set `overflow="reject"` to keep the typed value visible and mark the component invalid instead.
 
 ### Paste Behavior
 
 - Calendar dates accepted directly
 - Ordinal dates converted (`2026-040` → `2026-02-09`)
 - Datetime strings: extracts date part
-- With `pattern` attribute: only accepts calendar date format (`YYYY-MM-DD`)
 
 ---
 
@@ -191,21 +187,19 @@ DoD ordinal date input (YYYY-DDD).
 | `disabled` | boolean | — | Disables input |
 | `readonly` | boolean | — | Prevents editing |
 | `hotkeys` | boolean | — | Enables `n` key (set to now) |
-| `pattern` | boolean | — | Strict paste mode (only native format accepted) |
-| `overflow` | `reject` `constrain` | `reject` | Year edits that invalidate day-of-year remain visible and invalid by default; `constrain` restores clamping |
+| `overflow` | `constrain` `reject` | `constrain` | `reject` keeps invalid year/day-of-year combinations visible and marks the component invalid; default `constrain` clamps to the nearest valid day |
 
 ### Value Format
 
 `"YYYY-DDD"` — e.g. `"2026-040"` (February 9th)
 
-By default, invalid year/day-of-year combinations remain visible and set component validity. Set `overflow="constrain"` to clamp day-of-year when year changes.
+By default, invalid year/day-of-year combinations are clamped to the nearest valid day. Set `overflow="reject"` to keep the typed value visible and mark the component invalid instead.
 
 ### Paste Behavior
 
 - Ordinal dates accepted directly
 - Calendar dates converted (`2026-02-09` → `2026-040`)
 - Datetime strings: extracts date part
-- With `pattern` attribute: only accepts ordinal date format (`YYYY-DDD`)
 
 ---
 
@@ -218,7 +212,7 @@ ISO 8601 duration input with labeled segments.
 | Attribute | Values | Default | Description |
 |-----------|--------|---------|-------------|
 | `value` | ISO duration string | — | e.g. `"P1Y2M3W4DT5H30M45S"` |
-| `largest-unit` | `year` `month` `week` `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `day` | Largest visible duration segment |
+| `largest-unit` | `year` `month` `week` `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `year` | Largest visible duration segment |
 | `smallest-unit` | `year` `month` `week` `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `second` | Smallest visible duration segment |
 | `largest-unit-digits` | integer 1–9 | natural width | Widens the largest visible unit (e.g. 4-digit days). Must be ≥ that unit's natural width. |
 | `name` | string | — | Form field name |
@@ -232,7 +226,7 @@ ISO 8601 duration input with labeled segments.
 
 ISO 8601 duration: `"P1Y2M3W4DT5H30M45S"`, `"PT2H0M30.500S"`, `"P3DT12H0M0S"`
 
-Segments display as the inclusive unit window from `largest-unit` to `smallest-unit`. The default is `day` through `second`: `004d 05h 30m 45s` — days get 3 digits (the satops `DDD/HH:MM:SS` lineage), all other units stay at their natural 2-digit width. Sub-second fractional fields (ms/us/ns) keep 3 digits.
+Segments display as the inclusive unit window from `largest-unit` to `smallest-unit`. The default is `year` through `second` (all standard units visible). Sub-second fractional fields (ms/us/ns) keep 3 digits; all other units stay at their natural 2-digit width.
 
 ```html
 <nova-duration largest-unit="hour" smallest-unit="second" value="PT4H33M12S"></nova-duration>
@@ -277,11 +271,10 @@ Combined date+time input as a single component — all segments are in one flat 
 | `min` | ISO datetime string | — | Minimum valid value |
 | `max` | ISO datetime string | — | Maximum valid value |
 | `required` | boolean | — | Value must be provided |
-| `overflow` | `reject` `constrain` | `reject` | Date segment edits that create invalid dates remain visible and invalid by default; `constrain` restores clamping |
+| `overflow` | `constrain` `reject` | `constrain` | `reject` keeps invalid date segment combinations visible and marks the component invalid; default `constrain` clamps to the nearest valid date |
 | `disabled` | boolean | — | Disables input |
 | `readonly` | boolean | — | Prevents editing |
 | `hotkeys` | boolean | — | Enables `n` key (set to now) |
-| `pattern` | boolean | — | Strict paste mode (only native format accepted) |
 
 ### Value Format
 
@@ -292,7 +285,6 @@ Combined date+time input as a single component — all segments are in one flat 
 - Full datetime strings accepted (both calendar and ordinal formats, with cross-format conversion)
 - Date-only: sets date segments, preserves existing time
 - Time-only: sets time segments, preserves existing date
-- With `pattern` attribute: only accepts the component's native datetime format
 
 ### Example
 
@@ -395,13 +387,16 @@ Mixing within the Date family (e.g., `nova-date` + `nova-ordinal-date`) is allow
 | Event | Detail | Description |
 |-------|--------|-------------|
 | `temporal-change` | `{ mode, slots, invalid }` | Fires on any child input change |
+| `nova-error` | `{ code, message, info }` | Bubbles when the group rejects bad input. See [Error Reporting](#error-reporting) |
+
+Event-detail shape: flat keys when the schema is fixed; nested under a bag key (e.g. `slots`) when keys are dynamic.
 
 ### Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `mode` | string | Inferred mode ('range' or 'compute') |
-| `outputValue` | string | Computed output value |
+| `formattedValue` | string | Computed output value |
 | `min` | string | Minimum constraint |
 | `max` | string | Maximum constraint |
 | `validity` | ValidityState | Form validation state |
@@ -519,8 +514,8 @@ All input components share the same keyboard behavior:
 | ArrowUp / ArrowDown | Nudge value up/down (wraps at min/max) |
 | 0-9 | Digit entry with auto-advance |
 | Backspace / Delete | Clear focused segment to default |
-| Ctrl+C | Copy full ISO value |
-| Ctrl+V | Paste (single-segment or full ISO) |
+| Ctrl+C / ⌘-C | Copy full ISO value (copies the raw segment string when the component is in an invalid state) |
+| Ctrl+V | ⌘-V Paste (single-segment or full ISO) |
 | `n` | Set to current UTC now (requires `hotkeys` attribute) |
 
 ---
@@ -712,6 +707,54 @@ The library does not wrap `Temporal.*.from()` — it's the standard API and one 
 
 ---
 
+## Error Reporting
+
+All non-throw error paths route through a single helper that dispatches a `nova-error` `CustomEvent` and writes a console message. The host app subscribes once and decides what to surface — toast, log, telemetry, modal, alert.
+
+```javascript
+import { setNovaEnv } from "./js/nova-temporal/nova-temporal-errors.js";
+
+// Once at startup. Default is "development".
+setNovaEnv("production");
+
+document.addEventListener("nova-error", (e) => {
+  // e.detail = { code, message, info }
+  myTelemetry.report(e.detail);
+});
+```
+
+`nova-error` events bubble and cross shadow boundaries (`composed: true`). They fire in both dev and production — only the console output differs.
+
+### Environments
+
+| Env | Console output | Event detail |
+|-----|----------------|--------------|
+| `development` (default) | Verbose `[<tag>] <message>`, optional context object | Full fidelity |
+| `production` | Single canonical sentence: *"Error handling must be defined for operational environments and adhere to each environment's security posture."* | Full fidelity |
+
+The production console message is intentionally generic: production deployments must wire their own error handling that meets their security posture (no leaked input, no stack traces, no PII). Detail still flows through the event so authorized listeners can route it.
+
+### Codes
+
+| Code | Source | When |
+|------|--------|------|
+| `value-parse-error` | `<nova-*>` segment input | The `value` attribute (or attribute-path `setAttribute("value", …)`) cannot be parsed; the component falls back to placeholders |
+| `paste-parse-error` | `<nova-*>` segment input | A pasted string cannot be parsed |
+| `paste-range` | `<nova-*>` segment input | Pasted value parses but is out of `min`/`max` |
+| `datetime-parse-error` | `nova-temporal.js` | Offset-bearing datetime fails `Instant.from` |
+| `constraint-parse-error` | `<nova-temporal-group>` | `min`/`max` attribute on the group is unparseable; the group is `customError`-invalid until corrected |
+| `compute-error` | `<nova-temporal-group>` | A `Temporal.*` operation throws while computing the group's output (e.g. `PlainDate.add({ months: 1 }, { overflow: "reject" })` on Jan 31). The group is `customError`-invalid and the output reads `Invalid` |
+| `type-incompatibility` | `<nova-temporal-group>` | Sibling temporal slots mix incompatible families (e.g. PlainTime with PlainDate). Group surfaces this as `customError` |
+| `output-slot-shape` | `<nova-temporal-group>` | The `slot="output"` element is not an `<output>` or is missing a `.output-value` descendant. Authoring hint, not a runtime failure |
+
+Programmatic API misuse still throws synchronously (matches the standard DOM contract):
+
+- `el.temporal = wrongType` → `TypeError`
+- `el.value = "unparseable"` (property setter) → `RangeError` from the underlying `parseAndSet`
+- `<nova-segment-input-base>` reading `min`/`max` that don't parse → `RangeError` during `#validateRange`
+
+---
+
 ## Files
 
 Class hierarchy:
@@ -725,6 +768,7 @@ Shared type definitions live at `js/nova-segment-types.js`.
 | File | Purpose |
 |------|---------|
 | `nova-temporal.js` | Pure utility functions — parsing, formatting, arithmetic, comparison |
+| `nova-temporal-errors.js` | `setNovaEnv`, `getNovaEnv`, `reportNovaError`. Dispatches `nova-error` events; gates console output by env |
 | `nova-temporal-input-base.js` | Abstract base adding the Temporal-typed-value contract |
 | `nova-temporal-segments.js` | Shared segment descriptor constants and builders |
 | `nova-time.js` | `<nova-time>` component |

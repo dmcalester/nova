@@ -36,11 +36,10 @@ import { createNovaInputStyleSheets } from "../nova-stylesheets.js";
 import {
    DURATION_COMPARE_ANCHOR,
    formatDurationHuman,
+   parseConstraintByType,
    parseDuration,
-   parseAnyDatetime,
-   parseAnyDate,
-   parseTime,
 } from "./nova-temporal.js";
+import { reportNovaError } from "./nova-temporal-errors.js";
 
 // ── Type compatibility ────────────────────────────────────────────────────────
 
@@ -262,6 +261,7 @@ export class NovaTemporalGroup extends HTMLElement {
    #inferredMode = null; // 'range' | 'compute'
    #typeCompatibilityMessage = "";
    #warnedOutputElement = null;
+   #lastComputeError = null; // Error from latest compute attempt; cleared each compute
 
    constructor() {
       super();
@@ -430,8 +430,12 @@ export class NovaTemporalGroup extends HTMLElement {
       const incompatible = types.filter((t) => t.family !== firstFamily);
 
       if (incompatible.length > 0) {
-         const msg = `[nova-temporal-group] Type compatibility warning: Mixing ${types[0].type} (${types[0].name}) with ${incompatible.map((t) => `${t.type} (${t.name})`).join(", ")}. Operations may produce unexpected results.`;
-         console.warn(msg);
+         reportNovaError(
+            this,
+            "type-incompatibility",
+            `Mixing ${types[0].type} (${types[0].name}) with ${incompatible.map((t) => `${t.type} (${t.name})`).join(", ")}. Operations may produce unexpected results.`,
+            { primary: types[0], incompatible },
+         );
          this.#typeCompatibilityMessage =
             "Incompatible temporal types in group";
          return;
@@ -629,6 +633,8 @@ export class NovaTemporalGroup extends HTMLElement {
     * @returns {string}
     */
    #computeOutputValue() {
+      this.#lastComputeError = null;
+
       if (this.#inferredMode === "range") {
          // Range mode: compute duration from first to last temporal slot
          if (this.#temporalSlots.length < 2) return "";
@@ -649,9 +655,12 @@ export class NovaTemporalGroup extends HTMLElement {
             const duration = this.#computeRangeDuration(first, last);
             return formatDurationHuman(duration);
          } catch (e) {
-            console.warn(
-               "[nova-temporal-group] Duration computation error:",
-               e,
+            this.#lastComputeError = e;
+            reportNovaError(
+               this,
+               "compute-error",
+               "Duration computation error",
+               { mode: "range", error: e },
             );
             return "";
          }
@@ -760,7 +769,13 @@ export class NovaTemporalGroup extends HTMLElement {
          }
          return result;
       } catch (e) {
-         console.warn("[nova-temporal-group] Compute error:", e);
+         this.#lastComputeError = e;
+         reportNovaError(
+            this,
+            "compute-error",
+            "Compute error while applying durations",
+            { mode: "compute", error: e },
+         );
          return null;
       }
    }
@@ -782,14 +797,20 @@ export class NovaTemporalGroup extends HTMLElement {
 
       const id = this.id ? ` #${this.id}` : "";
       if (out.tagName !== "OUTPUT") {
-         console.warn(
-            `[nova-temporal-group]${id}: slot="output" should be an <output> element (got <${out.tagName.toLowerCase()}>) — native form semantics and assistive-tech announcement depend on it.`,
+         reportNovaError(
+            this,
+            "output-slot-shape",
+            `${id ? id.trim() + ": " : ""}slot="output" should be an <output> element (got <${out.tagName.toLowerCase()}>) — native form semantics and assistive-tech announcement depend on it.`,
+            { id: this.id || null, tagName: out.tagName.toLowerCase() },
          );
          return;
       }
       if (!out.querySelector(".output-value")) {
-         console.warn(
-            `[nova-temporal-group]${id}: slot="output" is missing a .output-value descendant; the computed value will overwrite sibling content. Add <span class="output-value"></span> inside the <output>.`,
+         reportNovaError(
+            this,
+            "output-slot-shape",
+            `${id ? id.trim() + ": " : ""}slot="output" is missing a .output-value descendant; the computed value will overwrite sibling content. Add <span class="output-value"></span> inside the <output>.`,
+            { id: this.id || null, missing: ".output-value" },
          );
       }
    }
@@ -807,7 +828,26 @@ export class NovaTemporalGroup extends HTMLElement {
 
       this.#internals.setFormValue(outputValue);
 
-      const validationResult = this.#validateGroup();
+      // Constraint-parse throws (bad min/max attribute) bubble out of
+      // #validateGroup. Match the child precedent (segment-input-base also
+      // throws on bad min/max): surface as customError validity rather than
+      // silently skipping the bound. The host learns via `nova-error`.
+      let validationResult;
+      try {
+         validationResult = this.#validateGroup();
+      } catch (e) {
+         reportNovaError(
+            this,
+            "constraint-parse-error",
+            e?.message || "Invalid min/max constraint on group",
+            { error: e },
+         );
+         validationResult = {
+            valid: false,
+            flags: { customError: true },
+            message: e?.message || "Invalid min/max constraint on group",
+         };
+      }
 
       if (!validationResult.valid) {
          this.#internals.setValidity(
@@ -858,6 +898,17 @@ export class NovaTemporalGroup extends HTMLElement {
       // Check duration/anchor type compatibility (compute mode only)
       const durationCompatResult = this.#validateDurationCompatibility();
       if (!durationCompatResult.valid) return durationCompatResult;
+
+      // Compute throws (Temporal API errors during apply/range) — recorded by
+      // #computeOutputValue / #applyDurations. Surface as customError so the
+      // group's validity matches the "Invalid" text shown in the output slot.
+      if (this.#lastComputeError) {
+         return {
+            valid: false,
+            flags: { customError: true },
+            message: "Could not compute group output.",
+         };
+      }
 
       // Any unset child blocks output computation, so the group is invalid
       // whenever it isn't complete — regardless of the `required` attribute.
@@ -985,7 +1036,13 @@ export class NovaTemporalGroup extends HTMLElement {
    }
 
    /**
-    * Range mode: min/max are durations constraining the duration between t0 and t1
+    * Range mode: min/max are durations constraining the duration between t0 and t1.
+    *
+    * Throws `RangeError` if `min` or `max` cannot be parsed as a Duration —
+    * matches the individual-component contract at
+    * `nova-segment-input-base.js:732-740`. Caller (`#syncFormValue`) catches
+    * and surfaces as `customError` validity rather than silently skipping the
+    * bound.
     */
    #validateMinMaxDuration(minAttr, maxAttr) {
       if (this.#temporalSlots.length < 2) return { valid: true };
@@ -1002,31 +1059,22 @@ export class NovaTemporalGroup extends HTMLElement {
 
       if (!temporal0 || !temporal1) return { valid: true };
 
-      try {
-         const duration = this.#computeRangeDuration(temporal0, temporal1);
-         return this.#checkBounds(
-            duration,
-            minAttr,
-            maxAttr,
-            (s) => {
-               const d = parseDuration(s);
-               return d ? Temporal.Duration.from(d) : null;
-            },
-            (a, b) => this.#compareDuration(a, b),
-            "Duration",
-         );
-      } catch (e) {
-         console.warn(
-            "[nova-temporal-group] Duration min/max comparison failed:",
-            e,
-         );
-      }
-
-      return { valid: true };
+      const duration = this.#computeRangeDuration(temporal0, temporal1);
+      return this.#checkBounds(
+         duration,
+         minAttr,
+         maxAttr,
+         (s) => parseConstraintByType(s, "Duration"),
+         (a, b) => this.#compareDuration(a, b),
+         "Duration",
+      );
    }
 
    /**
-    * Compute mode: min/max are temporal values constraining the computed output
+    * Compute mode: min/max are temporal values constraining the computed output.
+    *
+    * Throws `RangeError` if `min` or `max` cannot be parsed as the t0 anchor's
+    * `temporalType`. See `#validateMinMaxDuration` for the contract.
     */
    #validateMinMaxTemporal(minAttr, maxAttr) {
       const t0 = this.#slots.get("t0");
@@ -1037,50 +1085,14 @@ export class NovaTemporalGroup extends HTMLElement {
 
       const temporalType = t0.temporalType;
 
-      try {
-         return this.#checkBounds(
-            computedTemporal,
-            minAttr,
-            maxAttr,
-            (s) => this.#parseTemporalConstraint(s, temporalType),
-            (a, b) => this.#compareTemporal(a, b, temporalType),
-            "Computed value",
-         );
-      } catch (e) {
-         console.warn(
-            "[nova-temporal-group] Temporal min/max comparison failed:",
-            e,
-         );
-      }
-
-      return { valid: true };
-   }
-
-   #parseTemporalConstraint(str, temporalType) {
-      try {
-         switch (temporalType) {
-            case "PlainDateTime": {
-               const parsed = parseAnyDatetime(str);
-               return parsed ? parsed.date.toPlainDateTime(parsed.time) : null;
-            }
-            case "PlainDate":
-               return parseAnyDate(str);
-            case "PlainTime": {
-               const t = parseTime(str);
-               return t ? Temporal.PlainTime.from(t) : null;
-            }
-            case "Duration": {
-               const d = parseDuration(str);
-               return d ? Temporal.Duration.from(d) : null;
-            }
-         }
-      } catch (e) {
-         console.warn(
-            `[nova-temporal-group] Could not parse min/max constraint "${str}" as ${temporalType}:`,
-            e,
-         );
-      }
-      return null;
+      return this.#checkBounds(
+         computedTemporal,
+         minAttr,
+         maxAttr,
+         (s) => parseConstraintByType(s, temporalType),
+         (a, b) => this.#compareTemporal(a, b, temporalType),
+         "Computed value",
+      );
    }
 
    #compareDuration(a, b) {
@@ -1092,9 +1104,11 @@ export class NovaTemporalGroup extends HTMLElement {
                relativeTo: DURATION_COMPARE_ANCHOR,
             });
          } catch (e) {
-            console.warn(
-               "[nova-temporal-group] Could not compare Duration values:",
-               e,
+            reportNovaError(
+               this,
+               "compute-error",
+               "Could not compare Duration values",
+               { error: e },
             );
          }
       }
@@ -1119,9 +1133,11 @@ export class NovaTemporalGroup extends HTMLElement {
       try {
          return compareFn(a, b);
       } catch (e) {
-         console.warn(
-            `[nova-temporal-group] Could not compare ${temporalType} values:`,
-            e,
+         reportNovaError(
+            this,
+            "compute-error",
+            `Could not compare ${temporalType} values`,
+            { error: e },
          );
       }
       return null;
@@ -1197,7 +1213,7 @@ export class NovaTemporalGroup extends HTMLElement {
     * Current computed output (range duration or compute-mode result).
     * @returns {string}
     */
-   get outputValue() {
+   get formattedValue() {
       return this.#computeOutputValue();
    }
 

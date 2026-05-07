@@ -12,6 +12,7 @@
  */
 
 import { NovaSegmentInputBase } from "../nova-segment-input-base.js";
+import { reportNovaError } from "./nova-temporal-errors.js";
 
 /**
  * @typedef {"PlainDateTime"|"PlainDate"|"PlainTime"|"Duration"|null} TemporalTypeName
@@ -132,5 +133,23 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     */
    get temporalType() {
       return this.constructor.temporalType;
+   }
+
+   /**
+    * Dispatch a `nova-error` event so the host app can decide what to show
+    * (toast, alert, log, telemetry). Hosts that want the v1 alert behavior
+    * can listen and call `alert()` themselves.
+    *
+    * @param {'parse-error'|'range'} type
+    * @param {string} text
+    */
+   _onPasteError(type, text) {
+      reportNovaError(
+         this,
+         `paste-${type}`,
+         `Pasted text is malformed: "${text}"`,
+         { text },
+      );
+      // user-invalid validity already holds from the failed parse
    }
 }

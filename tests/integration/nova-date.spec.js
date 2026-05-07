@@ -47,7 +47,7 @@ test('invalid date assignment throws and leaves prior value intact', async ({ pa
   expect(r.value).toBe('2025-01-31');
 });
 
-test('month edit leaves invalid day visible and marks invalid by default', async ({ page }) => {
+test('month edit clamps day by default (constrain)', async ({ page }) => {
   const r = await page.evaluate(() => {
     const el = document.querySelector('#el');
     el.value = '2026-01-31';
@@ -57,28 +57,27 @@ test('month edit leaves invalid day visible and marks invalid by default', async
       month: el.getSegmentValueByName('month'),
       day: el.getSegmentValueByName('day'),
       valid: el.validity.valid,
-      customError: el.validity.customError,
     };
   });
-  expect(r).toEqual(expect.objectContaining({
-    value: '',
-    month: 2,
-    day: 31,
-    valid: false,
-    customError: true,
-  }));
+  expect(r).toEqual({ value: '2026-02-28', month: 2, day: 28, valid: true });
 });
 
-test('overflow="constrain" keeps compatibility clamping behavior', async ({ page }) => {
+test('overflow="reject" leaves invalid day visible and marks invalid', async ({ page }) => {
   const r = await page.evaluate(() => {
     const el = document.createElement('nova-date');
-    el.setAttribute('overflow', 'constrain');
+    el.setAttribute('overflow', 'reject');
     el.setAttribute('value', '2026-01-31');
     document.body.append(el);
     el.setSegmentValueByName('month', 2);
-    return { value: el.value, day: el.getSegmentValueByName('day'), valid: el.validity.valid };
+    return {
+      value: el.value,
+      month: el.getSegmentValueByName('month'),
+      day: el.getSegmentValueByName('day'),
+      valid: el.validity.valid,
+      customError: el.validity.customError,
+    };
   });
-  expect(r).toEqual({ value: '2026-02-28', day: 28, valid: true });
+  expect(r).toEqual({ value: '', month: 2, day: 31, valid: false, customError: true });
 });
 
 test('required + empty sets valueMissing', async ({ page }) => {

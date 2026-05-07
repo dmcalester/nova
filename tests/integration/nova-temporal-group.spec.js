@@ -5,9 +5,9 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
 });
 
-test('range mode: outputValue is populated after load', async ({ page }) => {
+test('range mode: formattedValue is populated after load', async ({ page }) => {
   await page.waitForTimeout(100);
-  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').outputValue);
+  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').formattedValue);
   expect(out).toBeTruthy();
 });
 
@@ -25,7 +25,7 @@ test('range mode: t1 < t0 is valid and produces a negative duration', async ({ p
     const group = document.querySelector('nova-temporal-group');
     return {
       valid: group.checkValidity(),
-      output: group.outputValue,
+      output: group.formattedValue,
       hasInvalidAttr: group.hasAttribute('invalid'),
     };
   });
@@ -56,12 +56,12 @@ test('range mode: single temporal slot is invalid configuration', async ({ page 
   expect(result.message).toContain('at least two temporal/duration slots');
 });
 
-test('compute mode: outputValue reflects t0 + d0 result', async ({ page }) => {
+test('compute mode: formattedValue reflects t0 + d0 result', async ({ page }) => {
   await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
   await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
   await page.waitForTimeout(200);
-  // outputValue is computed fresh from t0.temporal + d0.temporal
-  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').outputValue);
+  // formattedValue is computed fresh from t0.temporal + d0.temporal
+  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').formattedValue);
   expect(out).toBe('2026-04-09T16:00:00Z');
 });
 
@@ -75,7 +75,7 @@ test('compute mode: output updates when duration changes', async ({ page }) => {
     d0.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await page.waitForTimeout(100);
-  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').outputValue);
+  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').formattedValue);
   expect(out).toBe('2026-04-09T17:00:00Z');
 });
 
@@ -391,7 +391,7 @@ async function buildComputeGroup(page, anchorTag, anchorValue, durationValue, du
     return {
       valid: group.checkValidity(),
       message: group.validationMessage,
-      output: group.outputValue,
+      output: group.formattedValue,
     };
   });
 }
@@ -453,7 +453,7 @@ async function buildPlainTimeRange(page, t0Value, t1Value) {
     document.body.append(group);
   }, { t0Value, t1Value });
   await page.waitForTimeout(200);
-  return page.evaluate(() => document.querySelector('#fixture-range-time').outputValue);
+  return page.evaluate(() => document.querySelector('#fixture-range-time').formattedValue);
 }
 
 test('range mode: PlainTime forward same-day computes positive duration (F6 baseline)', async ({ page }) => {
@@ -638,4 +638,172 @@ test('row label gets [data-invalid] when its child is empty after user interacti
   expect(r.afterInteraction.t0).toBe(false);
   expect(r.afterInteraction.t1).toBe(true);
   expect(r.hostInvalid).toBe(true);
+});
+
+// ── nova-error event + loud-failure contract ──────────────────────────────────
+
+test('group: bad min attribute fires nova-error and sets customError validity', async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const events = [];
+    document.addEventListener('nova-error', (e) => events.push(e.detail));
+
+    const group = document.createElement('nova-temporal-group');
+    group.setAttribute('min', 'P1Z'); // unparseable duration
+    const t0 = document.createElement('nova-datetime');
+    t0.slot = 't0';
+    t0.setAttribute('value', '2026-04-09T10:00:00Z');
+    const t1 = document.createElement('nova-datetime');
+    t1.slot = 't1';
+    t1.setAttribute('value', '2026-04-09T15:00:00Z');
+    const out = document.createElement('output');
+    out.slot = 'output';
+    out.innerHTML = '<span class="output-value"></span>';
+    group.append(t0, t1, out);
+    document.body.append(group);
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
+
+    return {
+      events,
+      valid: group.checkValidity(),
+      customError: group.validity.customError,
+      validationMessage: group.validationMessage,
+    };
+  });
+  expect(r.valid).toBe(false);
+  expect(r.customError).toBe(true);
+  const constraintErr = r.events.find((d) => d.code === 'constraint-parse-error');
+  expect(constraintErr).toBeTruthy();
+});
+
+test('group: compute throw sets customError and shows "Invalid", validity matches output', async ({ page }) => {
+  // Jan 31 + P1M with overflow:"reject" throws because Feb 31 doesn't exist —
+  // a deterministic compute-error trigger.
+  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+
+  const r = await page.evaluate(async () => {
+    const events = [];
+    document.addEventListener('nova-error', (e) => events.push(e.detail));
+
+    if (!customElements.get('nova-date')) {
+      await import('/js/nova-temporal/nova-date.js');
+      await customElements.whenDefined('nova-date');
+    }
+    if (!customElements.get('nova-duration')) {
+      await import('/js/nova-temporal/nova-duration.js');
+      await customElements.whenDefined('nova-duration');
+    }
+
+    const group = document.createElement('nova-temporal-group');
+    const t0 = document.createElement('nova-date');
+    t0.slot = 't0';
+    t0.setAttribute('value', '2026-01-31');
+    const d0 = document.createElement('nova-duration');
+    d0.slot = 'd0';
+    d0.setAttribute('largest-unit', 'month');
+    d0.setAttribute('value', 'P1M');
+    const out = document.createElement('output');
+    out.slot = 'output';
+    out.innerHTML = '<span class="output-value"></span>';
+    group.append(t0, d0, out);
+    document.body.append(group);
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
+
+    return {
+      events,
+      valid: group.checkValidity(),
+      customError: group.validity.customError,
+      output: group.formattedValue,
+      outputText: out.querySelector('.output-value').textContent,
+    };
+  });
+  expect(r.valid).toBe(false);
+  expect(r.customError).toBe(true);
+  expect(r.output).toBe('');
+  expect(r.outputText).toBe('Invalid');
+  const computeErr = r.events.find((d) => d.code === 'compute-error');
+  expect(computeErr).toBeTruthy();
+});
+
+test('child paste error: nova-error event bubbles to group, no alert is called', async ({ page }) => {
+  // Trigger _onPasteError directly. The original v1 behavior alerted; the
+  // new behavior dispatches a `nova-error` event instead.
+  const r = await page.evaluate(async () => {
+    const events = [];
+    let alertCalled = false;
+    const origAlert = window.alert;
+    window.alert = () => { alertCalled = true; };
+
+    try {
+      const group = document.createElement('nova-temporal-group');
+      const t0 = document.createElement('nova-datetime');
+      t0.slot = 't0';
+      const t1 = document.createElement('nova-datetime');
+      t1.slot = 't1';
+      const out = document.createElement('output');
+      out.slot = 'output';
+      out.innerHTML = '<span class="output-value"></span>';
+      group.append(t0, t1, out);
+      document.body.append(group);
+      group.addEventListener('nova-error', (e) => events.push(e.detail));
+      await new Promise((r) => requestAnimationFrame(r));
+
+      t0._onPasteError('parse-error', 'not-a-date');
+      return { events, alertCalled };
+    } finally {
+      window.alert = origAlert;
+    }
+  });
+  expect(r.alertCalled).toBe(false);
+  const pasteErr = r.events.find((d) => d.code === 'paste-parse-error');
+  expect(pasteErr).toBeTruthy();
+  expect(pasteErr.info?.text).toBe('not-a-date');
+});
+
+test('production env: console output is the canonical sentence; event detail is unchanged', async ({ page }) => {
+  const consoleMessages = [];
+  page.on('console', (msg) => {
+    if (msg.type() === 'warning') consoleMessages.push(msg.text());
+  });
+
+  const r = await page.evaluate(async () => {
+    const errorsModule = await import('/js/nova-temporal/nova-temporal-errors.js');
+    errorsModule.setNovaEnv('production');
+
+    const events = [];
+    document.addEventListener('nova-error', (e) => events.push(e.detail));
+
+    try {
+      const group = document.createElement('nova-temporal-group');
+      group.setAttribute('min', 'P1Z'); // bad
+      const t0 = document.createElement('nova-datetime');
+      t0.slot = 't0';
+      t0.setAttribute('value', '2026-04-09T10:00:00Z');
+      const t1 = document.createElement('nova-datetime');
+      t1.slot = 't1';
+      t1.setAttribute('value', '2026-04-09T15:00:00Z');
+      const out = document.createElement('output');
+      out.slot = 'output';
+      out.innerHTML = '<span class="output-value"></span>';
+      group.append(t0, t1, out);
+      document.body.append(group);
+      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
+
+      return { events };
+    } finally {
+      // Restore env so other tests in the same worker aren't affected
+      errorsModule.setNovaEnv('development');
+    }
+  });
+
+  const constraintErr = r.events.find((d) => d.code === 'constraint-parse-error');
+  expect(constraintErr).toBeTruthy();
+  expect(constraintErr.message).toMatch(/P1Z/); // event detail is full-fidelity in prod
+  const canonical = consoleMessages.find((m) =>
+    m.includes('Error handling must be defined for operational environments')
+  );
+  expect(canonical).toBeTruthy();
 });

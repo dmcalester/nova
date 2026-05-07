@@ -80,10 +80,27 @@ test('programmatic value set updates .value', async ({ page }) => {
   expect(val).toBe('2024-02-29T12:00:00Z');
 });
 
-test('datetime edit preserves invalid date fields and invalidates instead of clamping', async ({ page }) => {
+test('datetime edit clamps day by default (constrain)', async ({ page }) => {
   const r = await page.evaluate(() => {
     const el = document.querySelector('#el');
     el.value = '2026-01-31T14:30:00Z';
+    el.setSegmentValueByName('month', 2);
+    return {
+      value: el.value,
+      month: el.getSegmentValueByName('month'),
+      day: el.getSegmentValueByName('day'),
+      valid: el.validity.valid,
+    };
+  });
+  expect(r).toEqual({ value: '2026-02-28T14:30:00Z', month: 2, day: 28, valid: true });
+});
+
+test('overflow="reject" preserves invalid date fields and marks invalid', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const el = document.createElement('nova-datetime');
+    el.setAttribute('overflow', 'reject');
+    el.setAttribute('value', '2026-01-31T14:30:00Z');
+    document.body.append(el);
     el.setSegmentValueByName('month', 2);
     return {
       value: el.value,

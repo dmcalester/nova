@@ -1,11 +1,10 @@
 /**
  * <nova-duration> — ISO 8601 duration input
  *
- * Displays a sliding unit window, e.g. [00]d [00]h [00]m [00]s
- * by default or [00]h [00]m [00]s when largest-unit="hour". The largest
- * visible unit naturally allows overflow per the satops elapsed-time
- * convention (DDD/HH:MM:SS lineage); use `largest-unit-digits` to widen it
- * further when a mission needs more (e.g. up to 9999 days).
+ * Displays a sliding unit window from largest-unit down to smallest-unit.
+ * Defaults to year through second (all standard units visible). Use
+ * largest-unit and smallest-unit to constrain the visible range, and
+ * largest-unit-digits to widen the head unit's digit count.
  *
  * Attributes:
  *   value                — ISO duration: "P1Y2M3W4DT5H30M45S" or "PT1H30M"
@@ -41,7 +40,7 @@ const FRACTIONAL_SECOND_DIGITS = {
 };
 
 export class NovaDuration extends NovaTemporalInputBase {
-   #largestUnit = "day";
+   #largestUnit = "year";
    #smallestUnit = "second";
    #largestUnitDigits = null;
 
@@ -96,7 +95,7 @@ export class NovaDuration extends NovaTemporalInputBase {
    connectedCallback() {
       this.#largestUnit = normalizeDurationUnit(
          this.getAttribute("largest-unit"),
-         "day",
+         "year",
       );
       this.#smallestUnit = normalizeDurationUnit(
          this.getAttribute("smallest-unit"),

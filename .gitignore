@@ -50,6 +50,7 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+.nyc_output
 
 # Temporary folders
 tmp/

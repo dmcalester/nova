@@ -6,12 +6,13 @@
  * from the base class — no shadow DOM bridging needed.
  *
  * Attributes:
- *   value      — ISO datetime: "2026-02-09T14:30:00Z" or "2026-040T14:30:00Z"
- *   format     — "date" (YYYY-MM-DD, default) or "ordinal" (YYYY-DDD)
+ *   value         — ISO datetime: "2026-02-09T14:30:00Z" or "2026-040T14:30:00Z"
+ *   format        — "date" (YYYY-MM-DD, default) or "ordinal" (YYYY-DDD)
  *   smallest-unit — minute | second | millisecond | microsecond | nanosecond
- *   name       — form field name
- *   disabled   — disables input
- *   readonly   — prevents editing
+ *   overflow      — "constrain" (default) | "reject"
+ *   name          — form field name
+ *   disabled      — disables input
+ *   readonly      — prevents editing
  *
  * Value format: "2026-02-09T14:30:00Z" (calendar) or "2026-040T14:30:00Z" (ordinal)
  */
@@ -181,6 +182,21 @@ export class NovaDatetime extends NovaTemporalInputBase {
       return `${datePart}T${timePart}Z`;
    }
 
+   _rawFormattedValue() {
+      const year = String(this.getSegmentValueByName("year")).padStart(4, "0");
+      let datePart;
+      if (this.format === "ordinal") {
+         const doy = String(this.getSegmentValueByName("dayOfYear")).padStart(3, "0");
+         datePart = `${year}-${doy}`;
+      } else {
+         const month = String(this.getSegmentValueByName("month")).padStart(2, "0");
+         const day = String(this.getSegmentValueByName("day")).padStart(2, "0");
+         datePart = `${year}-${month}-${day}`;
+      }
+      const t = buildTimeRecordFromSegments((n) => this.getSegmentValueByName(n));
+      return `${datePart}T${formatTime(t, this.smallestUnit)}Z`;
+   }
+
    #formatDate() {
       const year = this.getSegmentValueByName("year");
       if (this.#isOrdinal) {
@@ -284,6 +300,11 @@ export class NovaDatetime extends NovaTemporalInputBase {
       this.setAllSegmentValues([...dateValues, ...timeValues], true);
    }
 
+   /**
+    * Detail shape: `{ smallestUnit, input, parsedRecord }` — flat keys.
+    * Convention: fixed-schema events use flat keys; events with dynamic keys
+    * (e.g. per-slot data) nest them under a bag key like `slots`.
+    */
    #emitPrecisionTruncated(input, parsedRecord) {
       this.dispatchEvent(
          new CustomEvent("precision-truncated", {
@@ -293,6 +314,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
                parsedRecord,
             },
             bubbles: true,
+            composed: true,
          }),
       );
    }
@@ -305,6 +327,10 @@ export class NovaDatetime extends NovaTemporalInputBase {
       }
    }
 
+   /**
+    * @param {string} str
+    * @throws {RangeError} when the pasted string cannot be parsed
+    */
    _parsePasteValue(str) {
       const s = str.trim();
 
@@ -347,7 +373,9 @@ export class NovaDatetime extends NovaTemporalInputBase {
          }
          const timeValues = timeToSegmentValues(t, this.#smallestUnit);
          this.setAllSegmentValues([...dateValues, ...timeValues], true);
+         return;
       }
+      throw new RangeError(`nova-datetime.value: cannot parse "${s}" as datetime, date, or time`);
    }
 
    _compareValues(a, b) {
@@ -390,7 +418,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
    // ── Dependent value clamping ─────────────────────────────────────────────
 
    _onSegmentValueChanged(_index, name) {
-      if (this.getAttribute("overflow") !== "constrain") return;
+      if (this.getAttribute("overflow") === "reject") return;
       const getVal = (n) => this.getSegmentValueByName(n);
       const setVal = (n, v, s) => this.setSegmentValueByName(n, v, s);
       if (!this.#isOrdinal) {

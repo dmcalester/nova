@@ -24,8 +24,7 @@ Nova components are biased to enterprise users. Nova assumes use cases are for c
 - System consistency components have as close to a 1:1 behavior as the underlying system
 - GOMS modeling for heuristic evaluation loops to minimize user interfactions
 
-### Speed is UX
-Nova components are fanatically tuned and optimized to be as fast as possible. From local caching, optimized rendering techniques, platform-first features, local fonts, modern web and service workers.
+
 
 ## Components
 
@@ -60,7 +59,6 @@ See [`js/nova-temporal/README.md`](js/nova-temporal/README.md) for the full set 
 Theming is driven by CSS custom properties. The token layers live under [`css/`](css/):
 
 - [`nova-tokens.css`](css/nova-tokens.css) — primitive tokens (color ramps, sizes, type scale, motion).
-- [`nova-tokens--semantic.css`](css/nova-tokens--semantic.css) — semantic tokens that map primitives to roles (surface, text, border, focus, etc.).
 
 Override any token at `:root` or a scoped selector to retheme without touching component source.
 
@@ -70,13 +68,10 @@ The color layer ([`css/nova-colors.css`](css/nova-colors.css)) is built on **OKL
 
 This is the active color path — it works and is in use, but expect refinements as browser support for the CSS Color 4/5 features matures. Build on the tokens and you should be insulated from churn; depend on the procedural internals at your own risk.
 
-## Accessibility
-
-A11y is a known gap and an active work area. The Enterprise UX principle (keyboard-first, system-consistent behavior) sets the direction, but Nova does not yet make a formal claim against WCAG. Issues, feedback, and PRs welcome.
 
 ## AI Agents
 
-Nova ships with specialist agents under [`ai/agents/`](ai/agents/) that you can install into your local AI coding assistant. They are scoped narrowly so they trigger only on the kinds of questions where they actually help. Both of these agents were used during development.
+Nova ships with experimental specialist agents under [`ai/agents/`](ai/agents/) that you can install into your local AI coding assistant. They are scoped narrowly so they trigger only on the kinds of questions where they actually help. Both of these agents were used during development.
 
 - **`temporal-reviewer`** — Reviews JS/TS code through the lens of the Temporal API. Catches wrong type choices (`Instant` vs `ZonedDateTime`, `PlainDate` where calendar-aware arithmetic is coming), silent option-dropping in `with()`/`add()`/`since()`, lossy conversions to/from legacy `Date`, and helpers that re-implement built-in Temporal methods. Stays out of unrelated style/architecture review.
 - **`satops-time`** — Satellite-ops timekeeping authority. Answers normative questions about CCSDS time codes, timescale relationships (UTC/TAI/GPS/TDB/SCLK), ordinal date conventions, and AOS/LOS precision practice. Cites standards and distinguishes specified vs. convention vs. judgment. Does not review code.
@@ -133,18 +128,3 @@ Nova is in alpha and explicitly looking for feedback.
 ## License
 
 [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](LICENSE.md). The non-commercial clause is intentional — Nova is free to use, study, and build on for non-commercial work, and a commercially licensed version may be made available if there's interest. See [NOTICE](NOTICE) for attribution of bundled standards extracts under [`ai/references/`](ai/references/).
-
-## FAQs
-
-### Will there be a full Nova UI library?
-No, I’m not interested in creating a design system. Nova exists to solve problems that aren’t solved by the platform. That said, the tokens, APIs, and behaviors defined here could be used to build standard components on top.
-
-### Why no npm package?
-Nova is meant to be opinionatedly unopinionated. Copy-paste keeps the surface small, the dependency graph empty, and the integration shape entirely up to you.
-
-### Why only the space domain?
-That's the audience and use cases I know best. The components themselves aren't space-specific — any data-dense, precision-critical, keyboard-first interface can use them.
-
----
-
-† An optional build step does include concatenation and minimization for the smallest possible package size.

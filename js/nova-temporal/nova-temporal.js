@@ -8,6 +8,8 @@
  * Nanosecond precision throughout.
  */
 
+import { reportNovaError } from "./nova-temporal-errors.js";
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
@@ -456,9 +458,11 @@ export function parseAnyDatetime(str) {
             time: temporalToTimeRecord(pdt),
          };
       } catch (e) {
-         console.warn(
-            `[nova-temporal] Failed to parse offset-bearing datetime "${str}":`,
-            e,
+         reportNovaError(
+            null,
+            "datetime-parse-error",
+            `Failed to parse offset-bearing datetime "${str}"`,
+            { input: str, error: e },
          );
          return null;
       }
@@ -492,4 +496,49 @@ export function parseTimeFlexible(str) {
    const tIdx = str.indexOf("T");
    if (tIdx > 0) return parseTime(str.slice(tIdx + 1));
    return null;
+}
+
+/**
+ * Parse a `min`/`max` constraint string into the Temporal type matching a
+ * component's `temporalType`. Throws `RangeError` on parse failure — callers
+ * that want to tolerate bad attribute input should catch and route through
+ * `reportNovaError`.
+ *
+ * @param {string} str
+ * @param {"PlainDateTime"|"PlainDate"|"PlainTime"|"Duration"} temporalType
+ * @returns {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration}
+ * @throws {RangeError}
+ */
+export function parseConstraintByType(str, temporalType) {
+   const fail = () => {
+      throw new RangeError(
+         `parseConstraintByType: cannot parse "${str}" as ${temporalType}`,
+      );
+   };
+   switch (temporalType) {
+      case "PlainDateTime": {
+         const parsed = parseAnyDatetime(str);
+         if (!parsed) fail();
+         return parsed.date.toPlainDateTime(parsed.time);
+      }
+      case "PlainDate": {
+         const pd = parseAnyDate(str);
+         if (!pd) fail();
+         return pd;
+      }
+      case "PlainTime": {
+         const t = parseTime(str);
+         if (!t) fail();
+         return Temporal.PlainTime.from(t);
+      }
+      case "Duration": {
+         const d = parseDuration(str);
+         if (!d) fail();
+         return Temporal.Duration.from(d);
+      }
+      default:
+         throw new RangeError(
+            `parseConstraintByType: unknown temporalType "${temporalType}"`,
+         );
+   }
 }

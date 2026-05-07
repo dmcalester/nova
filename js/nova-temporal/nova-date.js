@@ -3,12 +3,10 @@
  *
  * Attributes:
  *   value    — ISO date string: "2026-02-09"
+ *   overflow — "constrain" (default) | "reject"
  *   name     — form field name
  *   disabled — disables input
  *   readonly — prevents editing
- *
- * Date overflow rejects by default: invalid segment combinations remain
- * visible and set validity instead of silently clamping.
  */
 
 import { NovaTemporalInputBase } from "./nova-temporal-input-base.js";
@@ -49,6 +47,13 @@ export class NovaDate extends NovaTemporalInputBase {
       return formatCalendarDate({ year, month, day });
    }
 
+   _rawFormattedValue() {
+      const y = String(this.getSegmentValueByName("year")).padStart(4, "0");
+      const m = String(this.getSegmentValueByName("month")).padStart(2, "0");
+      const d = String(this.getSegmentValueByName("day")).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+   }
+
    /**
     * @param {string} str
     * @param {boolean} [strict=false] - when true, only accept "YYYY-MM-DD";
@@ -74,6 +79,10 @@ export class NovaDate extends NovaTemporalInputBase {
       }
    }
 
+   /**
+    * @param {string} str
+    * @throws {RangeError} when the pasted string cannot be parsed
+    */
    _parsePasteValue(str) {
       // Try whole-string parse first (handles bare date forms), then fall
       // back to splitting on T so pasting a full datetime still extracts
@@ -81,13 +90,12 @@ export class NovaDate extends NovaTemporalInputBase {
       const tIdx = str.indexOf("T");
       const candidate = tIdx > 0 ? str.slice(0, tIdx) : str;
       const pd = parseAnyDate(str) || parseAnyDate(candidate);
-      if (pd) {
-         this.setAllSegmentValues([pd.year, pd.month, pd.day], true);
-      }
+      if (!pd) throw new RangeError(`nova-date.value: cannot parse "${str}" as date`);
+      this.setAllSegmentValues([pd.year, pd.month, pd.day], true);
    }
 
    _onSegmentValueChanged(_index, name) {
-      if (this.getAttribute("overflow") !== "constrain") return;
+      if (this.getAttribute("overflow") === "reject") return;
       clampCalendarDay(
          (n) => this.getSegmentValueByName(n),
          (n, v, s) => this.setSegmentValueByName(n, v, s),

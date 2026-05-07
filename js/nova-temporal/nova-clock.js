@@ -1,10 +1,10 @@
 /**
- * <nova-clock> – Live UTC clock display for ops center use.
+ * <nova-clock> — Live UTC clock display for ops center use.
  *
  * Attributes:
- *   smallest-unit "minute" | "second" (default) | "millisecond"
- *   show-date    When present, prepends ordinal date (YYYY-DDD)
- *   stopped      When present, pauses the clock
+ *   smallest-unit — minute | second | millisecond | microsecond | nanosecond
+ *   show-date     — when present, prepends ordinal date (YYYY-DDD)
+ *   stopped       — when present, pauses the clock
  */
 
 import { createNovaStyleSheets } from "../nova-stylesheets.js";

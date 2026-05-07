@@ -8,12 +8,10 @@
  *
  * Attributes:
  *   value    — "042" (day-only) or "2026-042" (with year)
+ *   overflow — "constrain" (default) | "reject"
  *   name     — form field name
  *   disabled — disables input
  *   readonly — prevents editing
- *
- * Date overflow rejects by default: invalid year/day combinations remain
- * visible and set validity instead of silently clamping.
  */
 
 import { NovaTemporalInputBase } from "./nova-temporal-input-base.js";
@@ -96,6 +94,13 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
       return formatOrdinalDate({ year, dayOfYear });
    }
 
+   _rawFormattedValue() {
+      const doy = String(this.getSegmentValueByName("dayOfYear")).padStart(3, "0");
+      if (!this.#hasYear) return doy;
+      const year = String(this.getSegmentValueByName("year")).padStart(4, "0");
+      return `${year}-${doy}`;
+   }
+
    /**
     * @param {string} str  - "DDD" toggles day-only mode; "YYYY-DDD" or any
     *   parseable date toggles year+day mode
@@ -151,6 +156,10 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
       }
    }
 
+   /**
+    * @param {string} str
+    * @throws {RangeError} when the pasted string cannot be parsed
+    */
    _parsePasteValue(str) {
       const tIdx = str.indexOf("T");
       const candidate = tIdx > 0 ? str.slice(0, tIdx) : str;
@@ -164,7 +173,9 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
       if (dayOnly !== null) {
          this.#ensureDayOnly();
          this.setAllSegmentValues([dayOnly], true);
+         return;
       }
+      throw new RangeError(`nova-ordinal-date.value: cannot parse "${str}" as date`);
    }
 
    _compareValues(a, b) {
@@ -194,7 +205,7 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
    }
 
    _onSegmentValueChanged(_index, name) {
-      if (this.#hasYear && this.getAttribute("overflow") === "constrain") {
+      if (this.#hasYear && this.getAttribute("overflow") !== "reject") {
          clampOrdinalDay(
             (n) => this.getSegmentValueByName(n),
             (n, v, s) => this.setSegmentValueByName(n, v, s),

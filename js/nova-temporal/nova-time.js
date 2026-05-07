@@ -87,6 +87,18 @@ export class NovaTime extends NovaTemporalInputBase {
       return formatTime(t, this.#smallestUnit) + "Z";
    }
 
+   _rawFormattedValue() {
+      const descs = this.activeDescriptors;
+      const seps = this.activeSeparators;
+      let out = "";
+      for (let i = 0; i < descs.length; i++) {
+         const v = this.getSegmentValueByName(descs[i].name) ?? 0;
+         out += String(v).padStart(descs[i].pad ?? 2, "0");
+         if (i < descs.length - 1) out += seps[i] ?? "";
+      }
+      return out + "Z";
+   }
+
    /**
     * @param {string} str
     * @param {boolean} [strict=false] - when true, only accept the native
@@ -114,11 +126,17 @@ export class NovaTime extends NovaTemporalInputBase {
       this.setAllSegmentValues(timeToSegmentValues(t, this.#smallestUnit), true);
    }
 
+   /**
+    * Detail shape: `{ smallestUnit, input, parsedRecord }` — flat keys.
+    * Convention: fixed-schema events use flat keys; events with dynamic keys
+    * (e.g. per-slot data) nest them under a bag key like `slots`.
+    */
    #emitPrecisionTruncated(input, parsedRecord) {
       this.dispatchEvent(
          new CustomEvent("precision-truncated", {
             detail: { smallestUnit: this.#smallestUnit, input, parsedRecord },
             bubbles: true,
+            composed: true,
          }),
       );
    }
@@ -131,9 +149,13 @@ export class NovaTime extends NovaTemporalInputBase {
       }
    }
 
+   /**
+    * @param {string} str
+    * @throws {RangeError} when the pasted string cannot be parsed
+    */
    _parsePasteValue(str) {
       const t = parseTimeFlexible(str);
-      if (!t) return;
+      if (!t) throw new RangeError(`nova-time.value: cannot parse "${str}" as time`);
       if (exceedsTimeSmallestUnit(t, this.#smallestUnit)) {
          this.#emitPrecisionTruncated(str, t);
       }
