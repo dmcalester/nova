@@ -1,6 +1,6 @@
 # Nova
 
-> Zero-dependency, precise, fast, safe, enterprise-grade web components for the space domain. Currently shipping `nova-temporal` — date, time, duration, and datetime inputs built on the TC39 Temporal API.
+> Zero-dependency, precise, fast, safe, enterprise-grade web components for the space domain. Currently shipping alpha version of `nova-temporal` — date, time, duration, and datetime inputs built on the TC39 Temporal API.
 
 **Status:** Alpha — actively looking for feedback. Open a thread in [GitHub Discussions](https://github.com/dmcalester/nova/discussions).
 
