@@ -40,6 +40,16 @@ const FRACTIONAL_SECOND_DIGITS = {
    nanosecond: 9,
 };
 
+// Match designator labels (Y/M/D/H/M/S and the leading P) to the segment
+// font-size. Other segment-input components keep the small 0.8em from the
+// base sheet — duration's labels are part of the value, not annotations.
+const durationLabelSheet = new CSSStyleSheet();
+durationLabelSheet.replaceSync(`
+   .label-text, .prefix-text {
+      font-size: 1em;
+   }
+`);
+
 export class NovaDuration extends NovaTemporalInputBase {
    #largestUnit = "year";
    #smallestUnit = "second";
@@ -47,6 +57,14 @@ export class NovaDuration extends NovaTemporalInputBase {
 
    static get temporalType() {
       return "Duration";
+   }
+
+   constructor() {
+      super();
+      this.shadowRoot.adoptedStyleSheets = [
+         ...this.shadowRoot.adoptedStyleSheets,
+         durationLabelSheet,
+      ];
    }
 
    static get observedAttributes() {

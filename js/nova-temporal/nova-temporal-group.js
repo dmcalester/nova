@@ -192,7 +192,7 @@ groupSheet.replaceSync(`
   /* Invalid label styling */
   ::slotted([slot$="-label"][data-invalid])::after {
     content: "•";
-    color: var(--group-label-text-color--invalid);
+    color: var(--group-border-color--invalid);
     font-weight: var(--font-weight-600); /* global prop */
     margin-inline-start: var(--space-100); /* global prop */
   }
@@ -467,7 +467,9 @@ export class NovaTemporalGroup extends HTMLElement {
       // Compute mode mixes t and d slots in DOM order; range mode is t-only,
       // sorted by index.
       this.#slotOrder =
-         this.#inferredMode === "compute" ? domOrder : tSlots.map((s) => s.name);
+         this.#inferredMode === "compute"
+            ? domOrder
+            : tSlots.map((s) => s.name);
 
       this.#temporalSlots = tSlots.map((s) => s.name);
       this.#durationSlots = dSlots.map((s) => s.name);
@@ -734,12 +736,10 @@ export class NovaTemporalGroup extends HTMLElement {
          duration = this.#computeRangeDuration(first, last);
       } catch (e) {
          this.#lastComputeError = e;
-         reportNovaError(
-            this,
-            "compute-error",
-            "Duration computation error",
-            { mode: "range", error: e },
-         );
+         reportNovaError(this, "compute-error", "Duration computation error", {
+            mode: "range",
+            error: e,
+         });
          return "";
       }
 
@@ -893,8 +893,7 @@ export class NovaTemporalGroup extends HTMLElement {
       // largestUnit explicit: PlainTime can't balance into days; everything
       // else is balanced to days (calendar-unit balancing requires relativeTo
       // and is anchor-sensitive — keep it day-and-below).
-      const largestUnit =
-         first instanceof Temporal.PlainTime ? "hour" : "day";
+      const largestUnit = first instanceof Temporal.PlainTime ? "hour" : "day";
       return first.until(last, { largestUnit });
    }
 
@@ -1348,8 +1347,7 @@ export class NovaTemporalGroup extends HTMLElement {
          if (!label) continue;
          const childInvalid = !!(el.validity && !el.validity.valid);
          const childEmpty = !el.value;
-         const isInvalid =
-            this.#userInteracted && (childInvalid || childEmpty);
+         const isInvalid = this.#userInteracted && (childInvalid || childEmpty);
          label.toggleAttribute("data-invalid", isInvalid);
       }
    }

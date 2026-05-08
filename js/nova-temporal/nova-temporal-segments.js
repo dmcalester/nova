@@ -317,9 +317,6 @@ export function buildDurationDescriptors(
  * labelBefore, and extraClass in place.
  *
  * Layout rules:
- *   - The first visible descriptor gets labelBefore "P" (or "PT" if the
- *     window is time-only) so the rendered string reads as a complete
- *     ISO-8601 duration.
  *   - Date-side designators (Y/M/W/D) follow each segment via labelAfter.
  *   - At a date→time boundary, the separator between the last date-side and
  *     first time-side segment is "T" (disambiguates months vs minutes).
@@ -327,14 +324,15 @@ export function buildDurationDescriptors(
  *     subsecond-gap class; the final visible segment receives the lone
  *     trailing "S" so fractional seconds render correctly.
  *
+ * The leading "P"/"PT" ISO designator is intentionally omitted from the
+ * rendered input — the component's serialized value still includes it, but
+ * the visual input reads as the unit-suffixed form (e.g. "1Y 2M 3D").
+ *
  * @param {SegmentDescriptor[]} descriptors - cloned descriptors, mutated in place
  * @returns {string[]} separators sized to descriptors.length - 1
  */
 function applyIsoDesignators(descriptors) {
    if (descriptors.length === 0) return [];
-
-   const firstIsTimeSide = !DURATION_DATE_SIDE_NAMES.has(descriptors[0].name);
-   descriptors[0].labelBefore = firstIsTimeSide ? "PT" : "P";
 
    const lastIndex = descriptors.length - 1;
    const lastName = descriptors[lastIndex].name;
