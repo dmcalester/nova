@@ -39,7 +39,6 @@ import { reportNovaError } from "./nova-temporal-errors.js";
  * @typedef {Object} DurationRecord
  * @property {number} [years]
  * @property {number} [months]
- * @property {number} [weeks]
  * @property {number} [days]
  * @property {number} [hours]
  * @property {number} [minutes]
@@ -92,7 +91,6 @@ export function temporalToDurationRecord(t) {
    return {
       years: t.years,
       months: t.months,
-      weeks: t.weeks,
       days: t.days,
       hours: t.hours,
       minutes: t.minutes,
@@ -325,24 +323,35 @@ export function formatOrdinalDate(d) {
 }
 
 // ── Duration parsing / formatting ────────────────────────────────────────────
-// Accepts full ISO 8601 durations: PnYnMnWnDTnHnMnS.
+// Accepts ISO-8601-1 durations EXCLUDING the week designator: PnYnMnDTnHnMnS.
+// "P{n}W" is rejected — ISO-8601-1 only permits weeks in isolation, never
+// combined with other components, and the package treats that asymmetry as a
+// non-feature rather than a partial implementation.
 
-// Anchor for comparing durations that contain calendar units (years/months/
-// weeks). Temporal.Duration.compare requires a relativeTo when calendar units
-// are present because P1Y vs P365D, P1M vs P30D, etc. are anchor-dependent.
+// Anchor for comparing durations that contain calendar units (years/months).
+// Temporal.Duration.compare requires a relativeTo when calendar units are
+// present because P1Y vs P365D, P1M vs P30D, etc. are anchor-dependent.
 // 2000-01-01 is a non-leap-year, non-DST sentinel — picked so the choice is
 // stable and explicit rather than implicit.
 export const DURATION_COMPARE_ANCHOR = Temporal.PlainDateTime.from(
    "2000-01-01T00:00",
 );
+
+// Reject any week designator in the date portion (before the optional T). A
+// trailing "W" inside the time portion is impossible per ISO-8601, so the
+// pre-T scan is sufficient.
+const WEEK_DESIGNATOR_REGEX = /^[+-]?P[^T]*\d+W/i;
+
 /**
  * @param {string} str
- * @returns {DurationRecord|null} null on parse failure
+ * @returns {DurationRecord|null} null on parse failure or unsupported "W" form
  */
 export function parseDuration(str) {
    if (!str) return null;
+   const trimmed = str.trim();
+   if (WEEK_DESIGNATOR_REGEX.test(trimmed)) return null;
    try {
-      const td = Temporal.Duration.from(str.trim());
+      const td = Temporal.Duration.from(trimmed);
       return temporalToDurationRecord(td);
    } catch {
       return null;
@@ -368,27 +377,20 @@ export function formatDuration(d, smallestUnit = "second") {
 }
 
 /**
- * Render a duration in the compact human form used by the group's output
- * slot (e.g. "1d 2h 30m"). Zero components are omitted; an empty duration
- * formats as "0s".
+ * Render a duration as a canonical ISO-8601 string (e.g. "P1DT2H30M").
+ * Used by the group's output slot and shared across the package as the single
+ * formatted-duration boundary. An empty duration formats as "PT0S".
  *
  * @param {DurationRecord|Temporal.Duration|null|undefined} d
  * @returns {string}
  */
 export function formatDurationHuman(d) {
    if (!d) return "";
-   const parts = [];
-   if (d.years) parts.push(`${d.years}y`);
-   if (d.months) parts.push(`${d.months}mo`);
-   if (d.weeks) parts.push(`${d.weeks}w`);
-   if (d.days) parts.push(`${d.days}d`);
-   if (d.hours) parts.push(`${d.hours}h`);
-   if (d.minutes) parts.push(`${d.minutes}m`);
-   if (d.seconds) parts.push(`${d.seconds}s`);
-   if (d.milliseconds) parts.push(`${d.milliseconds}ms`);
-   if (d.microseconds) parts.push(`${d.microseconds}µs`);
-   if (d.nanoseconds) parts.push(`${d.nanoseconds}ns`);
-   return parts.length > 0 ? parts.join(" ") : "0s";
+   try {
+      return Temporal.Duration.from(d).toString();
+   } catch {
+      return "";
+   }
 }
 
 // ── Now (UTC) ────────────────────────────────────────────────────────────────

@@ -24,12 +24,22 @@
  *   - Cross-family mixing produces a warning
  *
  * Attributes:
- *   disabled — propagates to all children
- *   readonly — propagates to all children
- *   required — group requires valid output
- *   name     — form field name
- *   min      — minimum constraint (duration in range mode, datetime in compute mode)
- *   max      — maximum constraint (duration in range mode, datetime in compute mode)
+ *   disabled       — propagates to all children
+ *   readonly       — propagates to all children
+ *   required       — group requires valid output
+ *   name           — form field name
+ *   min            — minimum constraint (duration in range mode, datetime in compute mode)
+ *   max            — maximum constraint (duration in range mode, datetime in compute mode)
+ *   output-format  — controls the string written to the output slot and submitted
+ *                    as the `output` FormData entry. Endpoints are always
+ *                    submitted individually (t0/t1/…, d0/…) regardless of format.
+ *                      duration       — ISO duration between endpoints (range default)
+ *                                       or sum of durations (compute mode)
+ *                      end            — last temporal (range mode) or computed
+ *                                       temporal (compute default)
+ *                      interval       — ISO 8601 `<start>/<end>`
+ *                      start-duration — ISO 8601 `<start>/<duration>`
+ *                      duration-end   — ISO 8601 `<duration>/<end>`
  */
 
 import { createNovaInputStyleSheets } from "../nova-stylesheets.js";
@@ -50,6 +60,23 @@ import { reportNovaError } from "./nova-temporal-errors.js";
 /**
  * @typedef {"range"|"compute"|null} GroupMode
  */
+
+/**
+ * @typedef {"duration"|"end"|"interval"|"start-duration"|"duration-end"} OutputFormat
+ */
+
+const OUTPUT_FORMATS = new Set([
+   "duration",
+   "end",
+   "interval",
+   "start-duration",
+   "duration-end",
+]);
+
+const DEFAULT_OUTPUT_FORMAT = {
+   range: "duration",
+   compute: "end",
+};
 
 /**
  * @typedef {Object} GroupValidationResult
@@ -261,6 +288,7 @@ export class NovaTemporalGroup extends HTMLElement {
    #inferredMode = null; // 'range' | 'compute'
    #typeCompatibilityMessage = "";
    #warnedOutputElement = null;
+   #warnedOutputFormat = null; // last unknown output-format value we warned about
    #lastComputeError = null; // Error from latest compute attempt; cleared each compute
 
    constructor() {
@@ -279,6 +307,7 @@ export class NovaTemporalGroup extends HTMLElement {
          "name",
          "min",
          "max",
+         "output-format",
          "aria-label",
          "aria-labelledby",
       ];
@@ -363,6 +392,37 @@ export class NovaTemporalGroup extends HTMLElement {
       if (name === "min" || name === "max") {
          this.#syncFormValue();
       }
+      if (name === "output-format") {
+         const outputValue = this.#computeOutputValue();
+         this.#updateOutput(outputValue);
+         this.#syncFormValue(outputValue);
+      }
+   }
+
+   // ── Output format ──────────────────────────────────────────────────────────
+
+   /**
+    * Resolve the active output format. Falls back to mode default if the
+    * attribute is missing or unrecognized; an unrecognized value is reported
+    * once via reportNovaError.
+    *
+    * @returns {OutputFormat}
+    */
+   #getOutputFormat() {
+      const attr = this.getAttribute("output-format");
+      const fallback = DEFAULT_OUTPUT_FORMAT[this.#inferredMode] || "duration";
+      if (!attr) return fallback;
+      if (OUTPUT_FORMATS.has(attr)) return attr;
+      if (this.#warnedOutputFormat !== attr) {
+         this.#warnedOutputFormat = attr;
+         reportNovaError(
+            this,
+            "output-format-unknown",
+            `Unknown output-format "${attr}" — falling back to "${fallback}". Valid values: ${[...OUTPUT_FORMATS].join(", ")}.`,
+            { provided: attr, fallback },
+         );
+      }
+      return fallback;
    }
 
    // ── Slot discovery ─────────────────────────────────────────────────────────
@@ -624,62 +684,160 @@ export class NovaTemporalGroup extends HTMLElement {
    }
 
    /**
-    * Compute the group's output string.
-    * - Range mode: human-formatted duration between t0 and the last t-slot.
-    * - Compute mode: t0 with all duration slots applied in DOM order,
-    *   re-formatted by t0's component.
+    * Compute the group's output string. Dispatches on `output-format`:
+    *
+    *   range mode:
+    *     duration       — ISO duration between t0 and the last t-slot (default)
+    *     end            — last t-slot, formatted by its component
+    *     interval       — `<t0>/<tLast>`
+    *     start-duration — `<t0>/<duration>`
+    *     duration-end   — `<duration>/<tLast>`
+    *
+    *   compute mode:
+    *     end            — t0 + sum(durations), formatted by t0 (default)
+    *     duration       — sum of all duration slots
+    *     interval       — `<t0>/<computed>`
+    *     start-duration — `<t0>/<sumDurations>`
+    *     duration-end   — `<sumDurations>/<computed>`
+    *
     * Returns "" when inputs are incomplete or computation fails.
     *
     * @returns {string}
     */
    #computeOutputValue() {
       this.#lastComputeError = null;
+      const format = this.#getOutputFormat();
+      return this.#inferredMode === "range"
+         ? this.#computeRangeOutput(format)
+         : this.#computeComputeOutput(format);
+   }
 
-      if (this.#inferredMode === "range") {
-         // Range mode: compute duration from first to last temporal slot
-         if (this.#temporalSlots.length < 2) return "";
+   /**
+    * @param {OutputFormat} format
+    * @returns {string}
+    */
+   #computeRangeOutput(format) {
+      if (this.#temporalSlots.length < 2) return "";
 
-         const firstSlot = this.#slots.get(this.#temporalSlots[0]);
-         const lastSlot = this.#slots.get(
-            this.#temporalSlots[this.#temporalSlots.length - 1],
+      const firstSlot = this.#slots.get(this.#temporalSlots[0]);
+      const lastSlot = this.#slots.get(
+         this.#temporalSlots[this.#temporalSlots.length - 1],
+      );
+      if (!firstSlot || !lastSlot) return "";
+
+      const first = firstSlot.temporal;
+      const last = lastSlot.temporal;
+      if (!first || !last) return "";
+
+      let duration;
+      try {
+         duration = this.#computeRangeDuration(first, last);
+      } catch (e) {
+         this.#lastComputeError = e;
+         reportNovaError(
+            this,
+            "compute-error",
+            "Duration computation error",
+            { mode: "range", error: e },
          );
+         return "";
+      }
 
-         if (!firstSlot || !lastSlot) return "";
+      const startStr = firstSlot.formatTemporal(first);
+      const endStr = lastSlot.formatTemporal(last);
+      const durationStr = formatDurationHuman(duration);
 
-         const first = firstSlot.temporal;
-         const last = lastSlot.temporal;
+      switch (format) {
+         case "end":
+            return endStr;
+         case "interval":
+            return `${startStr}/${endStr}`;
+         case "start-duration":
+            return `${startStr}/${durationStr}`;
+         case "duration-end":
+            return `${durationStr}/${endStr}`;
+         case "duration":
+         default:
+            return durationStr;
+      }
+   }
 
-         if (!first || !last) return "";
+   /**
+    * @param {OutputFormat} format
+    * @returns {string}
+    */
+   #computeComputeOutput(format) {
+      const t0 = this.#slots.get("t0");
+      if (!t0) return "";
 
-         try {
-            const duration = this.#computeRangeDuration(first, last);
-            return formatDurationHuman(duration);
-         } catch (e) {
-            this.#lastComputeError = e;
-            reportNovaError(
-               this,
-               "compute-error",
-               "Duration computation error",
-               { mode: "range", error: e },
-            );
-            return "";
+      const temporal0 = t0.temporal;
+      if (!temporal0) return "";
+
+      if (this.#durationSlots.length === 0) return "";
+      if (!this.#durationsCompatibleWithAnchor(temporal0)) return "";
+
+      const computed = this.#applyDurations(temporal0);
+      if (!computed) return "";
+
+      const startStr = t0.formatTemporal(temporal0);
+      const endStr = t0.formatTemporal(computed);
+
+      // duration / interval forms need the *sum* of duration slots. Sum it
+      // anchor-free — components are added in order against a PT0S start so
+      // calendar-unit balancing matches the order the user laid them out in.
+      let durationStr = "";
+      if (
+         format === "duration" ||
+         format === "start-duration" ||
+         format === "duration-end"
+      ) {
+         const sum = this.#sumDurations();
+         if (!sum) return "";
+         durationStr = formatDurationHuman(sum);
+      }
+
+      switch (format) {
+         case "duration":
+            return durationStr;
+         case "interval":
+            return `${startStr}/${endStr}`;
+         case "start-duration":
+            return `${startStr}/${durationStr}`;
+         case "duration-end":
+            return `${durationStr}/${endStr}`;
+         case "end":
+         default:
+            return endStr;
+      }
+   }
+
+   /**
+    * Sum every present duration slot into a single Temporal.Duration. Returns
+    * null if any slot is empty or the addition throws. No anchor — calendar
+    * units stay unbalanced, which is fine for display/serialization.
+    *
+    * @returns {Temporal.Duration|null}
+    */
+   #sumDurations() {
+      try {
+         let sum = Temporal.Duration.from("PT0S");
+         for (const slotName of this.#durationSlots) {
+            const dEl = this.#slots.get(slotName);
+            if (!dEl) continue;
+            const dur = dEl.temporal;
+            if (!dur) return null;
+            sum = sum.add(dur);
          }
-      } else {
-         // Compute mode: t0 + d0 + d1 + ... = computed temporal
-         const t0 = this.#slots.get("t0");
-         if (!t0) return "";
-
-         const temporal0 = t0.temporal;
-         if (!temporal0) return "";
-
-         if (this.#durationSlots.length === 0) return "";
-
-         if (!this.#durationsCompatibleWithAnchor(temporal0)) return "";
-
-         const result = this.#applyDurations(temporal0);
-         if (!result) return "";
-
-         return t0.formatTemporal(result);
+         return sum;
+      } catch (e) {
+         this.#lastComputeError = e;
+         reportNovaError(
+            this,
+            "compute-error",
+            "Could not sum duration slots",
+            { mode: "compute", error: e },
+         );
+         return null;
       }
    }
 
@@ -704,7 +862,7 @@ export class NovaTemporalGroup extends HTMLElement {
          const dur = dEl.temporal;
          if (!dur) continue;
 
-         if (isPlainTime && (dur.years || dur.months || dur.weeks || dur.days)) {
+         if (isPlainTime && (dur.years || dur.months || dur.days)) {
             return false;
          }
          if (
@@ -817,6 +975,38 @@ export class NovaTemporalGroup extends HTMLElement {
 
    // ── Validation ─────────────────────────────────────────────────────────────
 
+   /**
+    * Build the FormData submitted by setFormValue. The group behaves like a
+    * <fieldset>: each t/d slot ships under `${groupName}[${childName||slotName}]`
+    * (PHP/Rails bracket form, the de-facto HTML idiom for grouped fields), plus
+    * a `[output]` entry for the computed result. Without a group `name`,
+    * children submit under their plain key — same fallback the platform uses
+    * for unnamed fieldsets.
+    *
+    * Honors a child's own `name` attribute when present so authors can pick
+    * server-friendly keys (e.g. `start`/`end`) instead of the slot positions
+    * (`t0`/`t1`). Label slots and the output slot are excluded from iteration —
+    * the output is appended explicitly under the `output` key.
+    *
+    * @param {string} outputValue
+    * @returns {FormData}
+    */
+   #buildFormData(outputValue) {
+      const data = new FormData();
+      const groupName = this.name;
+      const key = (childKey) =>
+         groupName ? `${groupName}[${childKey}]` : childKey;
+
+      for (const [slotName, el] of this.#slots) {
+         if (slotName === "output") continue;
+         if (!/^[td]\d+$/.test(slotName)) continue;
+         const childName = el.getAttribute?.("name") || slotName;
+         data.append(key(childName), el.value ?? "");
+      }
+      data.append(key("output"), outputValue ?? "");
+      return data;
+   }
+
    #syncFormValue(outputValue = this.#computeOutputValue()) {
       if (this.hasAttribute("disabled")) {
          this.#internals.setFormValue(null);
@@ -826,7 +1016,7 @@ export class NovaTemporalGroup extends HTMLElement {
          return;
       }
 
-      this.#internals.setFormValue(outputValue);
+      this.#internals.setFormValue(this.#buildFormData(outputValue));
 
       // Constraint-parse throws (bad min/max attribute) bubble out of
       // #validateGroup. Match the child precedent (segment-input-base also
@@ -1124,9 +1314,9 @@ export class NovaTemporalGroup extends HTMLElement {
    #compareTemporal(a, b, temporalType) {
       // Duration must route through #compareDuration: parseDuration accepts
       // calendar units, and Temporal.Duration.compare throws without a
-      // relativeTo when years/months/weeks are present. A thrown compare here
-      // would return null and #checkBounds would skip the bound — silently
-      // passing min/max violations.
+      // relativeTo when years/months are present. A thrown compare here would
+      // return null and #checkBounds would skip the bound — silently passing
+      // min/max violations.
       if (temporalType === "Duration") return this.#compareDuration(a, b);
       const compareFn = Temporal[temporalType]?.compare;
       if (!compareFn) return null;
@@ -1249,6 +1439,20 @@ export class NovaTemporalGroup extends HTMLElement {
    set max(v) {
       if (v == null || v === "") this.removeAttribute("max");
       else this.setAttribute("max", v);
+   }
+
+   /**
+    * Active output format. Returns the resolved value (mode default when the
+    * attribute is unset or unrecognized), so callers always get one of the
+    * documented OutputFormat strings.
+    * @returns {OutputFormat}
+    */
+   get outputFormat() {
+      return this.#getOutputFormat();
+   }
+   set outputFormat(v) {
+      if (v == null || v === "") this.removeAttribute("output-format");
+      else this.setAttribute("output-format", v);
    }
 
    // ── Form Integration ───────────────────────────────────────────────────────

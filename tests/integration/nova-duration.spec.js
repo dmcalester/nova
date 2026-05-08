@@ -50,26 +50,42 @@ test('smallest-unit="nanosecond" value has 9 fractional digits', async ({ page }
   expect(val).toMatch(/\.\d{9}S$/);
 });
 
-test('full duration with years months and weeks round-trips', async ({ page }) => {
+test('full duration with years months and days round-trips', async ({ page }) => {
   const r = await page.evaluate(() => {
     const el = document.querySelector('#el');
     el.setAttribute('largest-unit', 'year');
-    el.value = 'P1Y2M3W4DT5H';
+    el.value = 'P1Y2M4DT5H';
     return {
       value: el.value,
       temporal: el.temporal.toString(),
       years: el.getSegmentValueByName('years'),
       months: el.getSegmentValueByName('months'),
-      weeks: el.getSegmentValueByName('weeks'),
+      days: el.getSegmentValueByName('days'),
     };
   });
   expect(r).toEqual({
-    value: 'P1Y2M3W4DT5H',
-    temporal: 'P1Y2M3W4DT5H',
+    value: 'P1Y2M4DT5H',
+    temporal: 'P1Y2M4DT5H',
     years: 1,
     months: 2,
-    weeks: 3,
+    days: 4,
   });
+});
+
+test('week-form duration is rejected', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const el = document.createElement('nova-duration');
+    el.setAttribute('largest-unit', 'year');
+    document.body.append(el);
+    let threw = null;
+    try {
+      el.value = 'P1W';
+    } catch (e) {
+      threw = e.message;
+    }
+    return { threw, value: el.value };
+  });
+  expect(r.threw).toContain('cannot parse');
 });
 
 test('largest-unit="hour" smallest-unit="second" exposes h/m/s only', async ({ page }) => {

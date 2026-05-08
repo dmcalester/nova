@@ -458,18 +458,18 @@ async function buildPlainTimeRange(page, t0Value, t1Value) {
 
 test('range mode: PlainTime forward same-day computes positive duration (F6 baseline)', async ({ page }) => {
   const out = await buildPlainTimeRange(page, '14:30:00', '16:30:00');
-  expect(out).toBe('2h');
+  expect(out).toBe('PT2H');
 });
 
 test('range mode: PlainTime spanning midnight uses native signed duration (F6)', async ({ page }) => {
   // Time-only ranges do not infer dates or next-occurrence semantics in v1.
   const out = await buildPlainTimeRange(page, '23:00:00', '01:00:00');
-  expect(out).toBe('-22h');
+  expect(out).toBe('-PT22H');
 });
 
 test('range mode: PlainTime equal endpoints computes zero duration (F6 edge)', async ({ page }) => {
   const out = await buildPlainTimeRange(page, '14:00:00', '14:00:00');
-  expect(out).toBe('0s');
+  expect(out).toBe('PT0S');
 });
 
 test('empty child makes group invalid (valueMissing) regardless of required attribute', async ({ page }) => {
@@ -806,4 +806,207 @@ test('production env: console output is the canonical sentence; event detail is 
     m.includes('Error handling must be defined for operational environments')
   );
   expect(canonical).toBeTruthy();
+});
+
+// ── Fieldset-style FormData submission ───────────────────────────────────────
+
+test.describe('form submission (fieldset semantics)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-form.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(150);
+  });
+
+  test('range mode submits namespaced child entries plus output', async ({ page }) => {
+    const map = await page.evaluate(() =>
+      Object.fromEntries(new FormData(document.getElementById('form-range'))),
+    );
+    expect(map['window[t0]']).toBe('2026-04-09T09:00:00Z');
+    expect(map['window[t1]']).toBe('2026-04-09T17:00:00Z');
+    expect(map['window[output]']).toBe('PT8H');
+    expect(map['window']).toBeUndefined();
+  });
+
+  test('child name attribute overrides slot name as the form key', async ({ page }) => {
+    const map = await page.evaluate(() =>
+      Object.fromEntries(new FormData(document.getElementById('form-named'))),
+    );
+    expect(map['window[start]']).toBe('2026-04-09T09:00:00Z');
+    expect(map['window[end]']).toBe('2026-04-09T17:00:00Z');
+    expect(map['window[output]']).toBe('PT8H');
+    expect(map['window[t0]']).toBeUndefined();
+  });
+
+  test('compute mode submits t0 and durations under namespaced keys', async ({ page }) => {
+    const map = await page.evaluate(() =>
+      Object.fromEntries(new FormData(document.getElementById('form-compute'))),
+    );
+    expect(map['plan[t0]']).toBe('2026-04-09T14:00:00Z');
+    expect(map['plan[d0]']).toBe('PT2H');
+    expect(map['plan[output]']).toBe('2026-04-09T16:00:00Z');
+  });
+
+  test('disabled group submits no entries', async ({ page }) => {
+    const entries = await page.evaluate(() =>
+      Array.from(new FormData(document.getElementById('form-disabled'))),
+    );
+    expect(entries.length).toBe(0);
+  });
+
+  test('nameless group submits child keys without prefix', async ({ page }) => {
+    const map = await page.evaluate(() =>
+      Object.fromEntries(new FormData(document.getElementById('form-nameless'))),
+    );
+    expect(map.start).toBe('2026-04-09T09:00:00Z');
+    expect(map.end).toBe('2026-04-09T17:00:00Z');
+    expect(map.output).toBe('PT8H');
+  });
+});
+
+// ── output-format attribute ──────────────────────────────────────────────────
+
+test.describe('output-format', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-range.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(50);
+  });
+
+  test('range mode: defaults to ISO duration', async ({ page }) => {
+    const out = await page.evaluate(() => document.getElementById('group').formattedValue);
+    expect(out).toBe('PT1H30M');
+  });
+
+  test('range mode: format=end returns last temporal', async ({ page }) => {
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'end';
+      return g.formattedValue;
+    });
+    expect(out).toBe('2026-04-09T15:30:00Z');
+  });
+
+  test('range mode: format=interval returns ISO 8601 start/end', async ({ page }) => {
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'interval';
+      return g.formattedValue;
+    });
+    expect(out).toBe('2026-04-09T14:00:00Z/2026-04-09T15:30:00Z');
+  });
+
+  test('range mode: format=start-duration returns ISO 8601 start/duration', async ({ page }) => {
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'start-duration';
+      return g.formattedValue;
+    });
+    expect(out).toBe('2026-04-09T14:00:00Z/PT1H30M');
+  });
+
+  test('range mode: format=duration-end returns ISO 8601 duration/end', async ({ page }) => {
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'duration-end';
+      return g.formattedValue;
+    });
+    expect(out).toBe('PT1H30M/2026-04-09T15:30:00Z');
+  });
+
+  test('range mode: changing output-format updates the output slot text', async ({ page }) => {
+    const text = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.setAttribute('output-format', 'interval');
+      return g.querySelector('.output-value').textContent;
+    });
+    expect(text).toBe('2026-04-09T14:00:00Z/2026-04-09T15:30:00Z');
+  });
+
+  test('compute mode: defaults to end (computed temporal)', async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(150);
+    const out = await page.evaluate(() => document.getElementById('group').formattedValue);
+    expect(out).toBe('2026-04-09T16:00:00Z');
+  });
+
+  test('compute mode: format=duration returns sum of durations', async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(150);
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'duration';
+      return g.formattedValue;
+    });
+    expect(out).toBe('PT2H');
+  });
+
+  test('compute mode: format=interval returns t0/computed', async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(150);
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'interval';
+      return g.formattedValue;
+    });
+    expect(out).toBe('2026-04-09T14:00:00Z/2026-04-09T16:00:00Z');
+  });
+
+  test('compute mode: format=start-duration uses summed durations', async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(150);
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'start-duration';
+      return g.formattedValue;
+    });
+    expect(out).toBe('2026-04-09T14:00:00Z/PT2H');
+  });
+
+  test('compute mode: format=duration-end uses summed durations and computed end', async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(150);
+    const out = await page.evaluate(() => {
+      const g = document.getElementById('group');
+      g.outputFormat = 'duration-end';
+      return g.formattedValue;
+    });
+    expect(out).toBe('PT2H/2026-04-09T16:00:00Z');
+  });
+
+  test('endpoints survive in FormData regardless of output-format', async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-temporal-group-form.html');
+    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.waitForTimeout(150);
+    const map = await page.evaluate(() => {
+      const g = document.querySelector('#form-range nova-temporal-group');
+      g.outputFormat = 'interval';
+      return Object.fromEntries(new FormData(document.getElementById('form-range')));
+    });
+    expect(map['window[t0]']).toBe('2026-04-09T09:00:00Z');
+    expect(map['window[t1]']).toBe('2026-04-09T17:00:00Z');
+    expect(map['window[output]']).toBe('2026-04-09T09:00:00Z/2026-04-09T17:00:00Z');
+  });
+
+  test('unknown output-format falls back to mode default and emits nova-error', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      return new Promise((resolve) => {
+        const events = [];
+        document.addEventListener('nova-error', (e) => events.push(e.detail));
+        const g = document.getElementById('group');
+        g.setAttribute('output-format', 'totally-not-real');
+        requestAnimationFrame(() => {
+          resolve({ value: g.formattedValue, resolved: g.outputFormat, events });
+        });
+      });
+    });
+    expect(result.value).toBe('PT1H30M'); // range default
+    expect(result.resolved).toBe('duration');
+    const err = result.events.find((d) => d.code === 'output-format-unknown');
+    expect(err).toBeTruthy();
+  });
 });

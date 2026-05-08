@@ -31,14 +31,19 @@ test('default window: days pad=3 max=999; hours/minutes/seconds pad=2 max=99', a
   ]);
 });
 
-test('year window: years pad=2; months/weeks pad=2; days pad=3', async ({ page }) => {
+test('year window: years/months pad=2 (weeks omitted); days pad=3', async ({ page }) => {
   const { descriptors } = await build(page, 'year', 'second');
-  expect(descriptors.slice(0, 4)).toEqual([
+  expect(descriptors.slice(0, 3)).toEqual([
     { name: 'years', pad: 2, max: 99 },
     { name: 'months', pad: 2, max: 99 },
-    { name: 'weeks', pad: 2, max: 99 },
     { name: 'days', pad: 3, max: 999 },
   ]);
+});
+
+test('week is rejected as a unit name', async ({ page }) => {
+  const r = await buildExpectError(page, 'week', 'second');
+  expect(r.threw).toBe(true);
+  expect(r.message).toContain('Invalid duration unit');
 });
 
 test('sub-second descriptors keep pad=3 max=999', async ({ page }) => {

@@ -9,8 +9,8 @@
 The Nova UI library was created as an outlet for my favorite questions “What if?”, in fact there’s a messier library I have called WIDS (What If? Design System) where these components started. So if you see any wids remnanents hanging around that’s why.
 
 
-### Zero Run Time Dependencies
-Copy-paste the JS and CSS and this library will run (in supported browsers). No frameworks, no libraries. No build required build steps†, no concatenation, obfuscation or minimization. No wrappers. 
+### No dependencies. No build step. No surprises.
+Copy-paste the JS and CSS and this library will run (in supported browsers) as-is. Nova is unapologetically oriented to the platform features. 
 
 ### Use What You Have, Buy What You Can, Build What You Need
 This was a mantra I heard over and over again working in the Space Force. Nova is *Build What You Need* — it extends the web platform rather than replacing it. Every line of JavaScript in Nova exists to provide functionality the platform doesn’t already offer. No wrappers around native elements, no JavaScript coats of paint, no replacements for components the platform already handles well — select menus, buttons, and basic inputs are not Nova’s job. Nova plays first with the platform and avoids unnecessary specificity to any single framework. A component that works in plain HTML works the same in React, Angular, or anything else.
@@ -22,7 +22,7 @@ Bad input, invalid state, and contract violations fail loudly at the developer l
 Nova components are biased to enterprise users. Nova assumes use cases are for complex, information dense systems where users have a high degree of training. Nova biases to improving accuracy, precision and velocity over intuitive or consumer-level usability rules. In practice this means:
 - Keyboard-first navigation.
 - System consistency components have as close to a 1:1 behavior as the underlying system
-- GOMS modeling for heuristic evaluation loops to minimize user interfactions
+
 
 
 

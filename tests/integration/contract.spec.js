@@ -280,11 +280,28 @@ test('nova-duration.value accepts calendar duration units', async ({ page }) => 
     const el = document.createElement('nova-duration');
     el.setAttribute('largest-unit', 'year');
     document.body.appendChild(el);
-    el.value = 'P1Y2M3W4DT5H';
+    el.value = 'P1Y2M4DT5H';
     return { value: el.value, temporal: el.temporal.toString() };
   });
-  expect(r.value).toBe('P1Y2M3W4DT5H');
-  expect(r.temporal).toBe('P1Y2M3W4DT5H');
+  expect(r.value).toBe('P1Y2M4DT5H');
+  expect(r.temporal).toBe('P1Y2M4DT5H');
+});
+
+test('nova-duration.value rejects week-form durations (ISO-8601-1 weeks-only restriction)', async ({ page }) => {
+  await page.goto(FIXTURES['nova-duration']);
+  const r = await page.evaluate(() => {
+    const el = document.createElement('nova-duration');
+    el.setAttribute('largest-unit', 'year');
+    document.body.appendChild(el);
+    let threw = null;
+    try {
+      el.value = 'P1W';
+    } catch (e) {
+      threw = e.constructor.name;
+    }
+    return { threw };
+  });
+  expect(r.threw).toBe('RangeError');
 });
 
 // ── Paste handler tolerates bad input ───────────────────────────────────────

@@ -7,9 +7,10 @@
  * largest-unit-digits to widen the head unit's digit count.
  *
  * Attributes:
- *   value                — ISO duration: "P1Y2M3W4DT5H30M45S" or "PT1H30M"
- *   largest-unit         — year | month | week | day | hour | minute | second | millisecond | microsecond | nanosecond
- *   smallest-unit        — year | month | week | day | hour | minute | second | millisecond | microsecond | nanosecond
+ *   value                — ISO-8601-1 duration: "P1Y2M3DT4H30M45S" or "PT1H30M".
+ *                          The week designator (P{n}W) is rejected — see README.
+ *   largest-unit         — year | month | day | hour | minute | second | millisecond | microsecond | nanosecond
+ *   smallest-unit        — year | month | day | hour | minute | second | millisecond | microsecond | nanosecond
  *   largest-unit-digits  — integer 1–9; widens the largest visible unit. Must be ≥ that unit's natural width.
  *   name                 — form field name
  *   disabled             — disables input

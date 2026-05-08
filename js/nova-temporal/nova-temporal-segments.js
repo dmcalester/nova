@@ -138,10 +138,14 @@ const TIME_FIELD_BY_NAME = Object.freeze(
 
 // ── Duration descriptors ────────────────────────────────────────────────────
 
+// Weeks are intentionally omitted: ISO-8601-1 only allows "P{n}W" in isolation
+// (it cannot combine with other date or time components), and treating it as
+// just another field would produce non-conforming strings like "P1W2D". The
+// component and parser reject weeks outright rather than carry a partial
+// implementation.
 export const DURATION_UNIT_ORDER = [
    "year",
    "month",
-   "week",
    "day",
    "hour",
    "minute",
@@ -154,7 +158,6 @@ export const DURATION_UNIT_ORDER = [
 const DURATION_DESCRIPTOR_NAME_BY_UNIT = Object.freeze({
    year: "years",
    month: "months",
-   week: "weeks",
    day: "days",
    hour: "hours",
    minute: "minutes",
@@ -167,7 +170,6 @@ const DURATION_DESCRIPTOR_NAME_BY_UNIT = Object.freeze({
 export const DURATION_FIELD_BY_UNIT = Object.freeze({
    year: "years",
    month: "months",
-   week: "weeks",
    day: "days",
    hour: "hours",
    minute: "minutes",
@@ -189,74 +191,21 @@ export function normalizeDurationUnit(unit, fallback) {
 
 // Default pad/max widths follow the satops elapsed-time convention (NASA
 // MET/GET lineage): only the largest visible unit overflows. Days get 3
-// digits (the DDD/HH:MM:SS pattern); year/month/week and hour/minute/second
+// digits (the DDD/HH:MM:SS pattern); year/month and hour/minute/second
 // stay at their natural 2-digit width. Authors who need to widen the largest
 // visible unit pass `largest-unit-digits` to <nova-duration>, which threads
 // through to buildDurationDescriptors below.
+//
+// labelAfter is filled in by buildDurationDescriptors() — ISO-8601 designators
+// (Y/M/D/H/M/S) depend on which units are actually visible (the trailing "S"
+// only appears once, on the last sub-second-or-second segment in the window).
 export const ALL_DURATION_DESCRIPTORS = [
-   {
-      name: "years",
-      field: "years",
-      label: "Years",
-      min: 0,
-      max: 99,
-      pad: 2,
-      labelAfter: "y",
-   },
-   {
-      name: "months",
-      field: "months",
-      label: "Months",
-      min: 0,
-      max: 99,
-      pad: 2,
-      labelAfter: "mo",
-   },
-   {
-      name: "weeks",
-      field: "weeks",
-      label: "Weeks",
-      min: 0,
-      max: 99,
-      pad: 2,
-      labelAfter: "w",
-   },
-   {
-      name: "days",
-      field: "days",
-      label: "Days",
-      min: 0,
-      max: 999,
-      pad: 3,
-      labelAfter: "d",
-   },
-   {
-      name: "hours",
-      field: "hours",
-      label: "Hours",
-      min: 0,
-      max: 99,
-      pad: 2,
-      labelAfter: "h",
-   },
-   {
-      name: "minutes",
-      field: "minutes",
-      label: "Minutes",
-      min: 0,
-      max: 99,
-      pad: 2,
-      labelAfter: "m",
-   },
-   {
-      name: "seconds",
-      field: "seconds",
-      label: "Seconds",
-      min: 0,
-      max: 99,
-      pad: 2,
-      labelAfter: "s",
-   },
+   { name: "years", field: "years", label: "Years", min: 0, max: 99, pad: 2 },
+   { name: "months", field: "months", label: "Months", min: 0, max: 99, pad: 2 },
+   { name: "days", field: "days", label: "Days", min: 0, max: 999, pad: 3 },
+   { name: "hours", field: "hours", label: "Hours", min: 0, max: 99, pad: 2 },
+   { name: "minutes", field: "minutes", label: "Minutes", min: 0, max: 99, pad: 2 },
+   { name: "seconds", field: "seconds", label: "Seconds", min: 0, max: 99, pad: 2 },
    {
       name: "ms",
       field: "milliseconds",
@@ -265,7 +214,6 @@ export const ALL_DURATION_DESCRIPTORS = [
       max: 999,
       pad: 3,
       wrap: true,
-      labelAfter: "ms",
    },
    {
       name: "us",
@@ -275,7 +223,6 @@ export const ALL_DURATION_DESCRIPTORS = [
       max: 999,
       pad: 3,
       wrap: true,
-      labelAfter: "us",
    },
    {
       name: "ns",
@@ -285,9 +232,25 @@ export const ALL_DURATION_DESCRIPTORS = [
       max: 999,
       pad: 3,
       wrap: true,
-      labelAfter: "ns",
    },
 ];
+
+// ISO-8601 designators by descriptor name. Months (date-side) and minutes
+// (time-side) both use "M"; the T separator inserted at the date/time boundary
+// is what disambiguates them. Sub-second segments (ms/us/ns) carry no
+// designator — they're rendered as fractional seconds, with a single trailing
+// "S" placed on the final visible segment.
+const ISO_DESIGNATOR_BY_NAME = Object.freeze({
+   years: "Y",
+   months: "M",
+   days: "D",
+   hours: "H",
+   minutes: "M",
+   seconds: "S",
+});
+
+const DURATION_DATE_SIDE_NAMES = new Set(["years", "months", "days"]);
+const DURATION_SUBSECOND_NAMES = new Set(["ms", "us", "ns"]);
 
 const MAX_LARGEST_UNIT_DIGITS = 9;
 
@@ -344,7 +307,70 @@ export function buildDurationDescriptors(
       head.max = 10 ** n - 1;
    }
 
-   return { descriptors, separators: [], largest, smallest };
+   const separators = applyIsoDesignators(descriptors);
+   return { descriptors, separators, largest, smallest };
+}
+
+/**
+ * Decorate cloned duration descriptors with ISO-8601 designators and return
+ * the matching separators array. Mutates each descriptor's labelAfter,
+ * labelBefore, and extraClass in place.
+ *
+ * Layout rules:
+ *   - The first visible descriptor gets labelBefore "P" (or "PT" if the
+ *     window is time-only) so the rendered string reads as a complete
+ *     ISO-8601 duration.
+ *   - Date-side designators (Y/M/W/D) follow each segment via labelAfter.
+ *   - At a date→time boundary, the separator between the last date-side and
+ *     first time-side segment is "T" (disambiguates months vs minutes).
+ *   - Sub-second segments (ms/us/ns) drop labelAfter and carry the
+ *     subsecond-gap class; the final visible segment receives the lone
+ *     trailing "S" so fractional seconds render correctly.
+ *
+ * @param {SegmentDescriptor[]} descriptors - cloned descriptors, mutated in place
+ * @returns {string[]} separators sized to descriptors.length - 1
+ */
+function applyIsoDesignators(descriptors) {
+   if (descriptors.length === 0) return [];
+
+   const firstIsTimeSide = !DURATION_DATE_SIDE_NAMES.has(descriptors[0].name);
+   descriptors[0].labelBefore = firstIsTimeSide ? "PT" : "P";
+
+   const lastIndex = descriptors.length - 1;
+   const lastName = descriptors[lastIndex].name;
+   const lastIsSubsecondOrSecond =
+      DURATION_SUBSECOND_NAMES.has(lastName) || lastName === "seconds";
+
+   for (let i = 0; i < descriptors.length; i++) {
+      const d = descriptors[i];
+      if (DURATION_SUBSECOND_NAMES.has(d.name)) {
+         if (i < lastIndex) d.extraClass = "subsecond-gap";
+         continue;
+      }
+      if (d.name === "seconds" && lastIsSubsecondOrSecond && i < lastIndex) {
+         // Sub-second segments follow; the trailing "S" lives on the last one.
+         continue;
+      }
+      d.labelAfter = ISO_DESIGNATOR_BY_NAME[d.name];
+   }
+   if (lastIsSubsecondOrSecond) {
+      descriptors[lastIndex].labelAfter = "S";
+   }
+
+   const separators = new Array(Math.max(0, descriptors.length - 1)).fill("");
+   for (let i = 0; i < descriptors.length - 1; i++) {
+      const curr = descriptors[i].name;
+      const next = descriptors[i + 1].name;
+      const currIsDate = DURATION_DATE_SIDE_NAMES.has(curr);
+      const nextIsDate = DURATION_DATE_SIDE_NAMES.has(next);
+      if (currIsDate && !nextIsDate) separators[i] = "T";
+      // Decimal point between integer seconds and the fractional sub-second
+      // segments — matches ISO-8601 fractional-seconds form (PT4.567S).
+      else if (curr === "seconds" && DURATION_SUBSECOND_NAMES.has(next)) {
+         separators[i] = ".";
+      }
+   }
+   return separators;
 }
 
 const SUB_SECOND = new Set(["ms", "us", "ns"]);

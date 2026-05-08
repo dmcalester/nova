@@ -147,9 +147,19 @@ test('parseDuration: accepts months ("P1M")', async ({ page }) => {
   expect(r).toEqual(expect.objectContaining({ months: 1 }));
 });
 
-test('parseDuration: accepts weeks ("P1W")', async ({ page }) => {
+test('parseDuration: rejects weeks-only ("P1W")', async ({ page }) => {
   const r = await page.evaluate(() => window.parseDuration('P1W'));
-  expect(r).toEqual(expect.objectContaining({ weeks: 1 }));
+  expect(r).toBeNull();
+});
+
+test('parseDuration: rejects mixed week form ("P1W2D")', async ({ page }) => {
+  const r = await page.evaluate(() => window.parseDuration('P1W2D'));
+  expect(r).toBeNull();
+});
+
+test('parseDuration: rejects negative week form ("-P2W")', async ({ page }) => {
+  const r = await page.evaluate(() => window.parseDuration('-P2W'));
+  expect(r).toBeNull();
 });
 
 test('parseDuration: accepts years ("P1Y")', async ({ page }) => {

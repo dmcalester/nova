@@ -60,14 +60,14 @@ test('formatDuration: nanosecond smallest-unit preserves 9 digits', async ({ pag
   expect(r).toBe('PT4.567891234S');
 });
 
-test('formatDurationHuman: formats human-readable string', async ({ page }) => {
+test('formatDurationHuman: formats ISO-8601 duration', async ({ page }) => {
   const r = await call(page, 'formatDurationHuman', { days: 1, hours: 2, minutes: 30, seconds: 0 });
-  expect(r).toBe('1d 2h 30m');
+  expect(r).toBe('P1DT2H30M');
 });
 
-test('formatDurationHuman: zero duration returns "0s"', async ({ page }) => {
+test('formatDurationHuman: zero duration returns "PT0S"', async ({ page }) => {
   const r = await call(page, 'formatDurationHuman', { days: 0, hours: 0, minutes: 0, seconds: 0 });
-  expect(r).toBe('0s');
+  expect(r).toBe('PT0S');
 });
 
 // ── formatCalendarDate: strict validation ───────────────────────────────────

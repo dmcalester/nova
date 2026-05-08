@@ -205,33 +205,35 @@ By default, invalid year/day-of-year combinations are clamped to the nearest val
 
 ## nova-duration
 
-ISO 8601 duration input with labeled segments.
+ISO-8601-1 duration input with labeled segments.
 
 ### Attributes
 
 | Attribute | Values | Default | Description |
 |-----------|--------|---------|-------------|
-| `value` | ISO duration string | — | e.g. `"P1Y2M3W4DT5H30M45S"` |
-| `largest-unit` | `year` `month` `week` `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `year` | Largest visible duration segment |
-| `smallest-unit` | `year` `month` `week` `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `second` | Smallest visible duration segment |
+| `value` | ISO-8601-1 duration string | — | e.g. `"P1Y2M3DT4H30M45S"` |
+| `largest-unit` | `year` `month` `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `year` | Largest visible duration segment |
+| `smallest-unit` | `year` `month` `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `second` | Smallest visible duration segment |
 | `largest-unit-digits` | integer 1–9 | natural width | Widens the largest visible unit (e.g. 4-digit days). Must be ≥ that unit's natural width. |
 | `name` | string | — | Form field name |
-| `min` | ISO duration string | — | Minimum valid value |
-| `max` | ISO duration string | — | Maximum valid value |
+| `min` | ISO-8601-1 duration string | — | Minimum valid value |
+| `max` | ISO-8601-1 duration string | — | Maximum valid value |
 | `required` | boolean | — | Value must be provided |
 | `disabled` | boolean | — | Disables input |
 | `readonly` | boolean | — | Prevents editing |
 
 ### Value Format
 
-ISO 8601 duration: `"P1Y2M3W4DT5H30M45S"`, `"PT2H0M30.500S"`, `"P3DT12H0M0S"`
+ISO-8601-1 duration: `"P1Y2M3DT4H30M45S"`, `"PT2H0M30.500S"`, `"P3DT12H0M0S"`.
+
+The week designator (`P{n}W`) is **not supported**. ISO-8601-1 only allows weeks in isolation — they cannot combine with other date or time components — so `nova-duration` rejects week-form inputs (`P1W`, `P1W2D`, etc.) outright rather than carry a partial implementation. `parseDuration()` returns `null` for any string containing a `W` designator.
 
 Segments display as the inclusive unit window from `largest-unit` to `smallest-unit`. The default is `year` through `second` (all standard units visible). Sub-second fractional fields (ms/us/ns) keep 3 digits; all other units stay at their natural 2-digit width.
 
 ```html
 <nova-duration largest-unit="hour" smallest-unit="second" value="PT4H33M12S"></nova-duration>
 <nova-duration largest-unit="day" smallest-unit="hour" value="P2DT4H"></nova-duration>
-<nova-duration largest-unit="year" smallest-unit="nanosecond" value="P1Y2M3W4DT5H30M45.123456789S"></nova-duration>
+<nova-duration largest-unit="year" smallest-unit="nanosecond" value="P1Y2M3DT4H30M45.123456789S"></nova-duration>
 ```
 
 Values with nonzero units outside the visible window are rejected. For example, `largest-unit="hour" smallest-unit="second"` accepts `PT4H33M12S` and rejects `P1DT4H`.
@@ -340,6 +342,7 @@ Derived values update reactively as child inputs change:
 | `name` | string | — | Form field name |
 | `min` | string | — | Minimum constraint (see below) |
 | `max` | string | — | Maximum constraint (see below) |
+| `output-format` | `duration` `end` `interval` `start-duration` `duration-end` | mode-dependent | Output string format (see below) |
 | `aria-label` | string | inferred | Accessible label |
 | `aria-labelledby` | IDREF | — | Reference to external label |
 
@@ -369,6 +372,29 @@ The `min` and `max` attributes constrain the group's computed output. The format
 
 Sets `rangeUnderflow` or `rangeOverflow` validity flags when constraints are violated.
 
+### Output Format
+
+By default the group writes an ISO duration in range mode and the computed temporal in compute mode. `output-format` switches the string written to the `<output>` slot — and submitted as the `[output]` FormData entry — to one of the ISO 8601 interval forms or a single-value form.
+
+| Value | Range mode | Compute mode |
+|-------|------------|--------------|
+| `duration` | `P1DT2H` (default) | sum of duration slots |
+| `end` | last temporal | computed temporal (default) |
+| `interval` | `<t0>/<tLast>` | `<t0>/<computed>` |
+| `start-duration` | `<t0>/<duration>` | `<t0>/<sumDurations>` |
+| `duration-end` | `<duration>/<tLast>` | `<sumDurations>/<computed>` |
+
+```html
+<nova-temporal-group output-format="interval">
+  <nova-date slot="t0" value="2021-10-10"></nova-date>
+  <nova-date slot="t1" value="2021-10-11"></nova-date>
+  <output slot="output"><span class="output-value"></span></output>
+</nova-temporal-group>
+<!-- output-value: 2021-10-10/2021-10-11 -->
+```
+
+Endpoints (t0/t1/d0/…) are always submitted as individual FormData entries regardless of `output-format`, so changing the format never loses data — it only changes the human/derived display string.
+
 ### Type Compatibility
 
 Components are grouped into type families:
@@ -397,6 +423,7 @@ Event-detail shape: flat keys when the schema is fixed; nested under a bag key (
 |----------|------|-------------|
 | `mode` | string | Inferred mode ('range' or 'compute') |
 | `formattedValue` | string | Computed output value |
+| `outputFormat` | string | Active output format (resolves to mode default when unset) |
 | `min` | string | Minimum constraint |
 | `max` | string | Maximum constraint |
 | `validity` | ValidityState | Form validation state |
@@ -452,6 +479,30 @@ Event-detail shape: flat keys when the schema is fixed; nested under a bag key (
   <nova-ordinal-date slot="t1" value="2026-050"></nova-ordinal-date>
 </nova-temporal-group>
 ```
+
+### Form submission
+
+`nova-temporal-group` behaves like a `<fieldset>`: every child input ships under a namespaced FormData key, plus an `[output]` entry for the computed value. Each child's own `name` attribute (when present) chooses the key; otherwise the slot name (`t0`, `t1`, `d0`, …) is used.
+
+```html
+<form>
+  <nova-temporal-group name="window">
+    <nova-datetime slot="t0" name="start" value="2026-02-09T14:30:00Z"></nova-datetime>
+    <nova-datetime slot="t1" name="end" value="2026-02-09T15:45:00Z"></nova-datetime>
+    <output slot="output"><span class="output-value"></span></output>
+  </nova-temporal-group>
+</form>
+```
+
+Submits:
+
+```
+window[start]  = 2026-02-09T14:30:00Z
+window[end]    = 2026-02-09T15:45:00Z
+window[output] = PT1H15M
+```
+
+Without a child `name`, keys fall back to slot positions (`window[t0]`, `window[t1]`). Without a group `name`, children submit under their plain key (`start`, `end`, `output`) — the same fallback the platform uses for unnamed fieldsets. A `disabled` group submits no entries at all.
 
 ### Custom States
 
@@ -640,7 +691,7 @@ Components inherit all styling from page-level CSS custom properties. Key tokens
 
 ## Helpers
 
-The package index intentionally exports a small helper surface: ordinal-date helpers for Temporal's missing ordinal constructor/parser and a human-readable duration formatter. For parsing, arithmetic, comparison, conversion, and `Temporal.Now.*`, use the native Temporal methods directly.
+The package index intentionally exports a small helper surface: ordinal-date helpers for Temporal's missing ordinal constructor/parser and an ISO-8601 duration formatter. For parsing, arithmetic, comparison, conversion, and `Temporal.Now.*`, use the native Temporal methods directly.
 
 ```javascript
 import {
@@ -670,14 +721,14 @@ const dur = start.until(end);
 
 If you want a specific largest unit in the result, pass it explicitly: `start.until(end, { largestUnit: 'day' })`.
 
-### Human-readable duration
+### ISO-8601 duration formatter
 
 ```javascript
 formatDurationHuman(Temporal.Duration.from('PT1H30M'));
-// '1h 30m'
+// 'PT1H30M'
 
 formatDurationHuman(Temporal.Duration.from('P3DT4H'));
-// '3d 4h'
+// 'P3DT4H'
 ```
 
 ### Ordinal dates

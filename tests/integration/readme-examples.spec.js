@@ -53,18 +53,18 @@ test('Interface Contract: .value and .temporal accessors', async ({ page }) => {
 
 // ── Helpers section examples ────────────────────────────────────────────────
 
-test('Helper: formatDurationHuman renders 1h 30m', async ({ page }) => {
+test('Helper: formatDurationHuman renders PT1H30M', async ({ page }) => {
   const s = await page.evaluate(() => {
     return window.formatDurationHuman(Temporal.Duration.from('PT1H30M'));
   });
-  expect(s).toBe('1h 30m');
+  expect(s).toBe('PT1H30M');
 });
 
-test('Helper: formatDurationHuman renders 3d 4h', async ({ page }) => {
+test('Helper: formatDurationHuman renders P3DT4H', async ({ page }) => {
   const s = await page.evaluate(() => {
     return window.formatDurationHuman(Temporal.Duration.from('P3DT4H'));
   });
-  expect(s).toBe('3d 4h');
+  expect(s).toBe('P3DT4H');
 });
 
 test('Helper: ordinalDateToPlainDate converts ordinal form', async ({ page }) => {
@@ -105,7 +105,7 @@ test('Form Integration: FormData captures ISO value strings', async ({ page }) =
 
 // ── Mode-specific group examples ────────────────────────────────────────────
 
-test('Group range mode: AOS/LOS computes 1h15m duration in output', async ({ page }) => {
+test('Group range mode: AOS/LOS computes PT1H15M duration in output', async ({ page }) => {
   await page.setContent(`
     <link rel="stylesheet" href="/css/nova-tokens.css">
     <link rel="stylesheet" href="/css/nova-colors.css">
@@ -125,7 +125,7 @@ test('Group range mode: AOS/LOS computes 1h15m duration in output', async ({ pag
     return el && el.textContent && el.textContent.length > 0;
   });
   const text = await page.evaluate(() => document.querySelector('.output-value').textContent.trim());
-  expect(text).toBe('1h 15m');
+  expect(text).toBe('PT1H15M');
 });
 
 test('Group compute mode: launch + 2h window computes cutoff', async ({ page }) => {
