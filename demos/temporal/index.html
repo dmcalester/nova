@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>Nova — Temporal Components</title>
+    <title>Nova — Temporal</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -12,156 +12,818 @@
     <link rel="stylesheet" href="/css/nova-form-controls.css" />
     <link rel="stylesheet" href="/css/components/nova-card.css" />
 
-    <script type="module" src="/js/nova-temporal/nova-time.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-date.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-clock.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" />
 
+    <script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-date.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-time.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
 
     <style>
-
-      .nova-grid {
-         padding: 1rem;
-         display: grid;
-         gap: 1rem;
-         grid-template-columns: 1fr 1fr;
+      body {
+         margin: 0;
+         min-height: 100vh;
       }
 
+      .walkthrough {
+         display: flex;
+         flex-direction: column;
+         gap: 3rem;
+         padding: 2.5rem;
+         margin: 2rem;
+         box-sizing: border-box;
+         color: light-dark(#111, #f0f0f0);
+      }
+
+      .walkthrough code {
+         color: light-dark(#000, #fff);
+      }
+
+      .demo-section {
+         display: grid;
+         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+         column-gap: 3rem;
+         align-items: start;
+      }
+
+      .walkthrough h1,
+      .walkthrough h2 {
+         margin-top: 0;
+         font-size: 2rem;
+         line-height: 1.2;
+         margin-bottom: 1rem;
+      }
+
+      .walkthrough p {
+         line-height: 1.6;
+      }
+
+      .step-list {
+         list-style: none;
+         padding: 0;
+         display: flex;
+         flex-direction: column;
+         gap: 0.75rem;
+      }
+
+      .step-list li {
+         line-height: 1.8;
+      }
+
+      .copyable {
+         display: inline-flex;
+         align-items: center;
+         gap: 0.5rem;
+         padding: 0 0.35rem;
+         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+         font-size: 0.9rem;
+         color: light-dark(#000, #fff);
+         background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+         border: 1px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
+         border-radius: 4px;
+         cursor: pointer;
+         user-select: all;
+         transition: background 120ms ease;
+      }
+
+      .copyable:hover {
+         background: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.15));
+      }
+
+      .copyable[data-copied="true"]::after {
+         content: "copied";
+         font-family: system-ui, sans-serif;
+         font-size: 0.75rem;
+         opacity: 0.7;
+      }
+
+      .demo-wrapper {
+         padding-block-start: calc(2rem * 1.2 + 1rem);
+      }
+
+      .demo-stage {
+         display: flex;
+         flex-direction: column;
+         gap: 1rem;
+         padding: 1.5rem;
+         background: #000;
+         border-radius: 6px;
+      }
+
+      pre[class*="language-"],
+      code[class*="language-"] {
+         margin: 0;
+         font-size: 0.9rem;
+         border-radius: 4px;
+         background: transparent;
+      }
+
+      pre[class*="language-"] {
+         overflow-x: auto;
+      }
+
+      #temporal-banner {
+         display: none;
+         align-items: center;
+         gap: 0.75rem;
+         padding: 0.875rem 1.5rem;
+         background: light-dark(#fff3cd, #3a2e00);
+         border-bottom: 1px solid light-dark(#f0c040, #7a5f00);
+         color: light-dark(#5a4000, #f5d060);
+         font-size: 0.9rem;
+         line-height: 1.5;
+      }
+
+      #temporal-banner[data-visible] {
+         display: flex;
+      }
+
+      #temporal-banner strong {
+         flex-shrink: 0;
+      }
     </style>
-
   </head>
-  <body class="nova-grid">
+  <body>
+    <div id="temporal-banner" role="alert">
+      <strong>Temporal API not supported</strong>
+      <span>This browser doesn't support the <code>Temporal</code> API. The demos below require a browser with native Temporal support — try Chrome 144+ or Firefox 139+</span>
+    </div>
 
-     <div class="nova-card">
-        <header><h2>Temporal Components</h2></header>
+    <main class="walkthrough">
 
+      <section class="demo-section">
+      <div class="instructions">
+         <h1>The Basics</h1>
+         <p>
+            Nova's temporal components at their most basic can be implemented
+            with a simple element declaration and will accept valid ISO-8601
+            strings.
+         </p>
+         <ol class="step-list">
+            <li>
+               <span>Copy this valid ISO-8601 string and try pasting it into the component:</span>
+               <code class="copyable" data-copy>2026-05-15T14:30:00Z</code>
+            </li>
+            <li>
+               <span>Copy this invalid ISO-8601 string and paste it into the component:</span>
+               <code class="copyable" data-copy>2026-13-45T99:99Z</code>
+            </li>
+         </ol>
+      </div>
 
-        <div class="nova-field">
-           <label class="nova-label" for="control-1">Standard Input</label>
-           <input type="datetime-local" required id="control-1"  class="nova-input" >
-        </div>
-
-
-        <div class="nova-field">
-           <label class="nova-label" for="temporal-1">Nanosecond Datetime</label>
-           <nova-datetime
-              id="temporal-1"
-              class="nova-control"
-              smallest-unit="nanosecond"
-              largest-unit="days"
-              value="2026-02-09T14:30:12.345678912Z"
-              min="2026-02-07T00:00Z"
-              max="2026-02-11T00:00Z"
-              hotkeys
-              required></nova-datetime>
-        </div>
-
-        <div class="nova-field">
-           <label class="nova-label" for="temporal-3">Duration asd</label>
-           <nova-duration
-              id="temporal-3"
-              class="nova-control"
-
-              smallest-unit="nanosecond"
-              value="PT1H"
-              hotkeys
-              required></nova-duration>
-        </div>
-
-         <div class="nova-field">
-            <label class="nova-label" for="temporal-2">Start/End Time</label>
-            <nova-temporal-group class="nova-control" id="temporal-2" max="PT30m">
-               <label slot="t0-label" for="temporal-2-t0">Start</label>
-               <nova-datetime slot="t0" id="temporal-2-t0" smallest-unit="second" value="2026-100T14:30Z" min="2026-099T00:00Z" hotkeys></nova-datetime>
-               <label slot="t1-label" for="temporal-2-t1">End</label>
-               <nova-datetime slot="t1" id="temporal-2-t1" smallest-unit="second" value="2026-100T15:30Z" max="2026-110T15:30Z" hotkeys></nova-datetime>
-               <output class="group-output" slot="output"><span class="output-label">Duration</span><span class="output-value"></span></output>
-            </nova-temporal-group>
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-datetime></nova-datetime>
+            <pre><code class="language-markup">&lt;nova-datetime&gt;&lt;/nova-datetime&gt;</code></pre>
          </div>
+      </div>
+      </section>
 
-         <div class="nova-field">
-            <label class="nova-label" for="duration">Duration</label>
-            <nova-temporal-group class="nova-control" id="duration" max="2026-04-01T14:30Z">
-               <label slot="t0-label" for="duration-t0">Start</label>
-               <nova-datetime format="ordinal" slot="t0" id="duration-t0" smallest-unit="minute" value="2026-02-28T14:30Z" max="2027-02-27T00:00Z" min="2026-01-02T00:00Z" hotkeys></nova-datetime>
-               <label slot="d0-label" for="duration-d0">For</label>
-               <nova-duration slot="d0" id="duration-d0" smallest-unit="nanosecond" value="PT15M" min="PT5M" max="PT20M"></nova-duration>
-               <output class="group-output" slot="output"><span class="output-label">End Datetime</span><span class="output-value"></span></output>
-            </nova-temporal-group>
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Time: smallest-unit</h2>
+         <p>
+            Control the precision of the time portion with
+            <code>smallest-unit</code>. Time-based components only support
+            <code>smallest-unit</code> — the largest unit is fixed by the
+            component itself (date for <code>nova-datetime</code>, hour for
+            <code>nova-time</code>). Valid time units are <code>hour</code>,
+            <code>minute</code>, <code>second</code>, <code>millisecond</code>,
+            <code>microsecond</code>, and <code>nanosecond</code>.
+         </p>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+
+            <nova-datetime
+               smallest-unit="nanosecond"
+               value="2026-02-09T14:30:00Z"></nova-datetime>
+            <pre><code class="language-markup">
+&lt;nova-datetime
+   smallest-unit="nanosecond"
+   value="2026-02-09T14:30:00Z"&gt;&lt;/nova-datetime&gt;</code></pre>
          </div>
+      </div>
+      </section>
 
-         <!-- nova-temporal-group with NEW slot naming (t0, d0, t1) -->
-         <div class="nova-field">
-            <label class="nova-label" for="multi-step">Multi Step</label>
-            <nova-temporal-group class="nova-control" id="multi-step">
-               <label slot="t0-label" for="mult-step-t0">Start</label>
-               <nova-datetime slot="t0" id="mult-step-t0" smallest-unit="millisecond" value="2026-02-09T14:30Z" hotkeys></nova-datetime>
-               <label slot="d0-label" for="mult-step-d0">Burn</label>
-               <nova-duration slot="d0" id="mult-step-d0" largest-unit="year" smallest-unit="millisecond" value="PT15M" min="PT45S" max="PT3H"></nova-duration>
-               <label slot="d1-label" for="mult-step-d1">Pause</label>
-               <nova-duration slot="d1" id="mult-step-d1" largest-unit="hour" largest-unit-digits="4" smallest-unit="millisecond" value="PT15M" min="PT45S" max="PT3H"></nova-duration>
-               <label slot="d3-label" for="mult-step-d3">Burn</label>
-               <nova-duration slot="d3" id="mult-step-d3" largest-unit="hour" smallest-unit="millisecond" value="PT15M" min="PT45S" max="PT300H"></nova-duration>
-               <label slot="d4-label" for="mult-step-d4">Cool Down</label>
-               <nova-duration slot="d4" id="mult-step-d4" largest-unit="hour" smallest-unit="millisecond" value="PT1H30M" min="PT1H"></nova-duration>
-               <output class="group-output" slot="output"><span class="output-label">End Datetime</span><span class="output-value"></span></output>
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Copy/Paste Behavior</h2>
+         <p>
+            Nova's temporal components deviate from the HTML spec for date-time
+            input elements and will copy a full ISO-8601 string to your
+            clipboard. Try it by focusing on the <code>nova-datetime</code>
+            component, copying the value, and pasting into the text input
+            below.
+         </p>
+      </div>
 
-            </nova-temporal-group>
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-datetime value="2026-01-02T14:00Z"></nova-datetime>
+            <input type="text" class="nova-input" placeholder="Paste here" />
+            <pre><code class="language-markup">&lt;nova-datetime value="2026-01-02T14:00Z"&gt;&lt;/nova-datetime&gt;
+&lt;input type="text" /&gt;</code></pre>
          </div>
+      </div>
+      </section>
 
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Min and Max</h2>
+         <p>
+            Constrain the allowed range with <code>min</code> and
+            <code>max</code> attributes. Both accept ISO-8601 strings. Values
+            entered or pasted outside the range will be marked as invalid.
+         </p>
+         <ol class="step-list">
+            <li>
+               <span>This value is in range — try pasting it:</span>
+               <code class="copyable" data-copy>2026-02-08T12:00Z</code>
+            </li>
+            <li>
+               <span>This value is past <code>max</code> — try pasting it:</span>
+               <code class="copyable" data-copy>2026-03-01T00:00Z</code>
+            </li>
+         </ol>
+      </div>
 
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-datetime
+               value="2026-02-09T14:30Z"
+               min="2026-02-07T00:00Z"
+               max="2026-02-11T00:00Z"></nova-datetime>
+            <pre><code class="language-markup">&lt;nova-datetime
+   value="2026-02-09T14:30Z"
+   min="2026-02-07T00:00Z"
+   max="2026-02-11T00:00Z"&gt;&lt;/nova-datetime&gt;</code></pre>
+         </div>
+      </div>
+      </section>
 
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Hotkeys</h2>
+         <p>
+            Add the <code>hotkeys</code> boolean attribute to enable extra
+            keyboard shortcuts. With <code>hotkeys</code> enabled, pressing
+            <kbd>n</kbd> while focused on the component sets its value to the
+            current UTC <em>now</em>.
+         </p>
+         <ol class="step-list">
+            <li>Focus the first component (no <code>hotkeys</code>) and press <kbd>n</kbd> — nothing happens.</li>
+            <li>Focus the second component (<code>hotkeys</code> enabled) and press <kbd>n</kbd> — it jumps to the current time.</li>
+         </ol>
+      </div>
 
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-datetime value="2026-02-09T14:30Z"></nova-datetime>
+            <nova-datetime value="2026-02-09T14:30Z" hotkeys></nova-datetime>
+            <pre><code class="language-markup">&lt;nova-datetime value="2026-02-09T14:30Z"&gt;&lt;/nova-datetime&gt;
 
+&lt;nova-datetime value="2026-02-09T14:30Z" hotkeys&gt;&lt;/nova-datetime&gt;</code></pre>
+         </div>
+      </div>
+      </section>
 
-     </div>
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Overflow</h2>
+         <p>
+            By default, segment edits that create an invalid date clamp to the
+            nearest valid date (matching Temporal's own default). Set
+            <code>overflow="reject"</code> to keep the typed value visible and
+            mark the component as invalid instead.
+         </p>
+         <ol class="step-list">
+            <li>On both components below, change the month segment from 01 to 02.</li>
+            <li>The first (default) clamps day 31 down to 28.</li>
+            <li>The second (<code>overflow="reject"</code>) keeps day 31 visible and invalid.</li>
+         </ol>
+      </div>
 
-     <div class="nova-card" style="color-scheme: light;">
-        <header><h2>Temporal Components (Light Theme)</h2></header>
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-datetime value="2026-01-31T12:00Z"></nova-datetime>
+            <nova-datetime value="2026-01-31T12:00Z" overflow="reject"></nova-datetime>
+            <pre><code class="language-markup">&lt;nova-datetime value="2026-01-31T12:00Z"&gt;&lt;/nova-datetime&gt;
 
-        <div class="nova-field">
-           <label class="nova-label" for="control-1-light">Standard Input</label>
-           <input type="text" required id="control-1-light" class="nova-input" >
-        </div>
+&lt;nova-datetime
+   value="2026-01-31T12:00Z"
+   overflow="reject"&gt;&lt;/nova-datetime&gt;</code></pre>
+         </div>
+      </div>
+      </section>
 
-        <div class="nova-field">
-           <label class="nova-label" for="temporal-light-1">Nanosecond Datetime</label>
-           <nova-datetime
-              id="temporal-light-1"
-              class="nova-control"
-              smallest-unit="nanosecond"
-              value="2026-02-09T14:30Z"
-              min="2026-02-07T00:00Z"
-              max="2026-02-11T00:00Z"
-              hotkeys
-              required></nova-datetime>
-        </div>
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Duration</h2>
+         <p>
+            Duration is natively supported in Temporal. The
+            <code>nova-duration</code> component provides an input control to
+            handle ISO-8601 compliant duration strings.
+         </p>
+         <ol class="step-list">
+            <li>
+               <span>Copy this valid duration string and paste it into the component (it should accept):</span>
+               <code class="copyable" data-copy>PT1H30M</code>
+            </li>
+            <li>
+               <span>Copy this invalid duration string and paste it into the component (it should error):</span>
+               <code class="copyable" data-copy>1H30M</code>
+            </li>
+         </ol>
+      </div>
 
-        <div class="nova-field">
-           <label class="nova-label" for="temporal-2">Start/End Time</label>
-           <nova-temporal-group class="nova-control" id="temporal-2-light">
-              <label slot="t0-label" for="temporal-2-t0">Start</label>
-              <nova-datetime slot="t0" id="temporal-2-t0" smallest-unit="second" value="2026-100T14:30Z" min="2026-099T00:00Z" hotkeys></nova-datetime>
-              <label slot="t1-label" for="temporal-2-t1">End</label>
-              <nova-datetime slot="t1" id="temporal-2-t1" smallest-unit="second" value="2026-100T15:30Z" max="2026-110T15:30Z" hotkeys></nova-datetime>
-              <output class="group-output" slot="output"><span class="output-label">Duration</span><span class="output-value"></span></output>
-           </nova-temporal-group>
-        </div>
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-duration></nova-duration>
+            <pre><code class="language-markup">&lt;nova-duration&gt;&lt;/nova-duration&gt;</code></pre>
+         </div>
+      </div>
+      </section>
 
-        <div class="nova-field">
-           <label class="nova-label" for="duration-light">Duration</label>
-           <nova-temporal-group class="nova-control" id="duration-light" max="2027-03-01T14:30Z">
-              <label slot="t0-label" for="duration-light-t0">Start</label>
-              <nova-datetime slot="t0" id="duration-light-t0" smallest-unit="minute" value="2026-02-02T14:30Z" max="2027-04-02T00:00Z" min="2026-01-02T00:00Z" hotkeys></nova-datetime>
-              <label slot="d0-label" for="duration-light-d0">For</label>
-              <nova-duration slot="d0" id="duration-light-d0" smallest-unit="nanosecond" value="PT15M" min="PT5M" max="PT20M"></nova-duration>
-              <output class="group-output" slot="output"><span class="output-label">End Datetime</span><span class="output-value"></span></output>
-           </nova-temporal-group>
-        </div>
-     </div>
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Duration: largest-unit and smallest-unit</h2>
+         <p>
+            Control which units the component exposes with
+            <code>largest-unit</code> and <code>smallest-unit</code>. Together
+            they define the visible range of segments — anything outside that
+            range is hidden. Valid units are <code>year</code>,
+            <code>month</code>, <code>day</code>, <code>hour</code>,
+            <code>minute</code>, <code>second</code>,
+            <code>millisecond</code>, <code>microsecond</code>, and
+            <code>nanosecond</code>.
+         </p>
+         <ol class="step-list">
+            <li>
+               <span>Hours/minutes/seconds only — try pasting:</span>
+               <code class="copyable" data-copy>PT2H15M30S</code>
+            </li>
+            <li>
+               <span>Sub-second precision — try pasting:</span>
+               <code class="copyable" data-copy>PT5M30.250S</code>
+            </li>
+         </ol>
+      </div>
 
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-duration
+               largest-unit="day"
+               smallest-unit="second"
+               value="PT1H00M00S"></nova-duration>
+            <nova-duration
+               largest-unit="minute"
+               smallest-unit="millisecond"
+               value="PT5M00.000S"></nova-duration>
+            <pre><code class="language-markup">&lt;nova-duration
+   largest-unit="hour"
+   smallest-unit="second"
+   value="PT1H00M00S"&gt;&lt;/nova-duration&gt;
+
+&lt;nova-duration
+   largest-unit="minute"
+   smallest-unit="millisecond"
+   value="PT5M00.000S"&gt;&lt;/nova-duration&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Duration: largest-unit-digits</h2>
+         <p>
+            Use <code>largest-unit-digits</code> to widen the digit count of the
+            largest visible unit. This is useful when values can exceed the
+            natural width — for example, a total-hours field that can reach four
+            digits.
+         </p>
+         <ol class="step-list">
+            <li>
+               <span>Paste a large hour value to see all four digits:</span>
+               <code class="copyable" data-copy>PT1234H</code>
+            </li>
+         </ol>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-duration
+               largest-unit="hour"
+               smallest-unit="second"
+               largest-unit-digits="4"
+               value="PT0H00M"></nova-duration>
+            <pre><code class="language-markup">&lt;nova-duration
+   largest-unit="hour"
+   smallest-unit="second"
+   largest-unit-digits="4"
+   value="PT0H00M"&gt;&lt;/nova-duration&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h1>Temporal Groups</h1>
+         <p>
+            <code>nova-temporal-group</code> coordinates two or more temporal
+            inputs and exposes a single computed output. Mode is inferred from
+            the slots you provide — no <code>mode</code> attribute to set.
+         </p>
+         <ul class="step-list">
+            <li>
+               <strong>Range mode</strong> — only <code>t0</code>, <code>t1</code>, …
+               slots. Output is the duration between the first and last temporal.
+            </li>
+            <li>
+               <strong>Compute mode</strong> — a <code>t0</code> anchor plus one or
+               more <code>d0</code>, <code>d1</code>, … duration slots. Output is the
+               anchor with each duration applied in DOM order.
+            </li>
+         </ul>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group>
+               <label slot="t0-label" for="intro-t0">Start</label>
+               <nova-datetime slot="t0" id="intro-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <label slot="t1-label" for="intro-t1">End</label>
+               <nova-datetime slot="t1" id="intro-t1" value="2026-05-01T17:30Z"></nova-datetime>
+               <output slot="output"><span class="output-label">Duration</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
+   &lt;label slot="t0-label" for="t0"&gt;Start&lt;/label&gt;
+   &lt;nova-datetime slot="t0" id="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;label slot="t1-label" for="t1"&gt;End&lt;/label&gt;
+   &lt;nova-datetime slot="t1" id="t1" value="2026-05-01T17:30Z"&gt;&lt;/nova-datetime&gt;
+   &lt;output slot="output"&gt;
+      &lt;span class="output-label"&gt;Duration&lt;/span&gt;
+      &lt;span class="output-value"&gt;&lt;/span&gt;
+   &lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Compute Mode</h2>
+         <p>
+            Add a <code>d0</code> duration slot beside the <code>t0</code>
+            anchor and the group switches to compute mode automatically. The
+            output is re-formatted by <code>t0</code>'s component, so it
+            mirrors the anchor's precision.
+         </p>
+         <ol class="step-list">
+            <li>
+               <span>Edit the duration to <code>PT2H30M</code> and watch the output update.</span>
+            </li>
+            <li>
+               <span>Try pasting onto the start datetime:</span>
+               <code class="copyable" data-copy>2026-06-15T08:00Z</code>
+            </li>
+         </ol>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group>
+               <label slot="t0-label" for="compute-t0">Start</label>
+               <nova-datetime slot="t0" id="compute-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <label slot="d0-label" for="compute-d0">For</label>
+               <nova-duration slot="d0" id="compute-d0" value="PT1H30M"></nova-duration>
+               <output slot="output"><span class="output-label">End</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
+   &lt;label slot="t0-label" for="t0"&gt;Start&lt;/label&gt;
+   &lt;nova-datetime slot="t0" id="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;label slot="d0-label" for="d0"&gt;For&lt;/label&gt;
+   &lt;nova-duration slot="d0" id="d0" value="PT1H30M"&gt;&lt;/nova-duration&gt;
+   &lt;output slot="output"&gt;
+      &lt;span class="output-label"&gt;End&lt;/span&gt;
+      &lt;span class="output-value"&gt;&lt;/span&gt;
+   &lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Multi-Step Compute</h2>
+         <p>
+            Compute mode chains any number of duration slots. Each duration is
+            applied in DOM order, so the output is
+            <code>t0 + d0 + d1 + d2 + …</code>. Use it for burn/coast/burn-style
+            sequences or any flow with multiple stages.
+         </p>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group>
+               <label slot="t0-label" for="multi-t0">Ignition</label>
+               <nova-datetime slot="t0" id="multi-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <label slot="d0-label" for="multi-d0">Burn</label>
+               <nova-duration slot="d0" id="multi-d0" value="PT15M"></nova-duration>
+               <label slot="d1-label" for="multi-d1">Coast</label>
+               <nova-duration slot="d1" id="multi-d1" largest-unit="hour" value="PT2H"></nova-duration>
+               <label slot="d2-label" for="multi-d2">Burn</label>
+               <nova-duration slot="d2" id="multi-d2" value="PT5M"></nova-duration>
+               <output slot="output"><span class="output-label">Shutdown</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
+   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-duration slot="d0" value="PT15M"&gt;&lt;/nova-duration&gt;
+   &lt;nova-duration slot="d1" largest-unit="hour" value="PT2H"&gt;&lt;/nova-duration&gt;
+   &lt;nova-duration slot="d2" value="PT5M"&gt;&lt;/nova-duration&gt;
+   &lt;output slot="output"&gt;…&lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Range Mode: min &amp; max</h2>
+         <p>
+            In range mode, the group's <code>min</code> and <code>max</code>
+            are <em>durations</em> — they constrain the gap between
+            <code>t0</code> and the last temporal slot. The component goes
+            invalid if the computed range falls outside.
+         </p>
+         <ol class="step-list">
+            <li>
+               <span>This duration is in range — try setting end to:</span>
+               <code class="copyable" data-copy>2026-05-01T12:00Z</code>
+            </li>
+            <li>
+               <span>This pushes past <code>max="PT8H"</code> — try setting end to:</span>
+               <code class="copyable" data-copy>2026-05-01T20:00Z</code>
+            </li>
+         </ol>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group min="PT30M" max="PT8H">
+               <label slot="t0-label" for="rng-t0">Start</label>
+               <nova-datetime slot="t0" id="rng-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <label slot="t1-label" for="rng-t1">End</label>
+               <nova-datetime slot="t1" id="rng-t1" value="2026-05-01T11:00Z"></nova-datetime>
+               <output slot="output"><span class="output-label">Duration</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group min="PT30M" max="PT8H"&gt;
+   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-datetime slot="t1" value="2026-05-01T11:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;output slot="output"&gt;…&lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Compute Mode: min &amp; max</h2>
+         <p>
+            In compute mode, <code>min</code> and <code>max</code> are
+            <em>temporal values</em> matching <code>t0</code>'s type — they
+            constrain the computed result, not the inputs. Push the duration
+            until the computed end runs past <code>max</code>.
+         </p>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group min="2026-05-01T09:00Z" max="2026-05-01T12:00Z">
+               <label slot="t0-label" for="cmp-t0">Start</label>
+               <nova-datetime slot="t0" id="cmp-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <label slot="d0-label" for="cmp-d0">For</label>
+               <nova-duration slot="d0" id="cmp-d0" value="PT1H"></nova-duration>
+               <output slot="output"><span class="output-label">End</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group
+   min="2026-05-01T09:00Z"
+   max="2026-05-01T12:00Z"&gt;
+   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-duration slot="d0" value="PT1H"&gt;&lt;/nova-duration&gt;
+   &lt;output slot="output"&gt;…&lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Date-Only Range</h2>
+         <p>
+            The group works with any temporal type — not just
+            <code>nova-datetime</code>. Use <code>nova-date</code> for
+            day-grain ranges; the output reports days.
+         </p>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group>
+               <label slot="t0-label" for="date-t0">Check-in</label>
+               <nova-date slot="t0" id="date-t0" value="2026-05-01"></nova-date>
+               <label slot="t1-label" for="date-t1">Check-out</label>
+               <nova-date slot="t1" id="date-t1" value="2026-05-08"></nova-date>
+               <output slot="output"><span class="output-label">Stay</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
+   &lt;nova-date slot="t0" value="2026-05-01"&gt;&lt;/nova-date&gt;
+   &lt;nova-date slot="t1" value="2026-05-08"&gt;&lt;/nova-date&gt;
+   &lt;output slot="output"&gt;…&lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Time-Only Range</h2>
+         <p>
+            <code>nova-time</code> ranges stay clock-only — there's no
+            overnight inference, so the duration is computed directly from
+            <code>t0.until(t1)</code> with hours as the largest unit.
+         </p>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group>
+               <label slot="t0-label" for="time-t0">Open</label>
+               <nova-time slot="t0" id="time-t0" value="09:00"></nova-time>
+               <label slot="t1-label" for="time-t1">Close</label>
+               <nova-time slot="t1" id="time-t1" value="17:30"></nova-time>
+               <output slot="output"><span class="output-label">Open for</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
+   &lt;nova-time slot="t0" value="09:00"&gt;&lt;/nova-time&gt;
+   &lt;nova-time slot="t1" value="17:30"&gt;&lt;/nova-time&gt;
+   &lt;output slot="output"&gt;…&lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Output Format</h2>
+         <p>
+            By default, range mode outputs an ISO duration and compute mode
+            outputs the computed end. The <code>output-format</code> attribute
+            (or <code>.outputFormat</code> property) switches the output slot
+            to one of the ISO 8601 interval forms — <code>interval</code>,
+            <code>start-duration</code>, or <code>duration-end</code> — or the
+            single-value <code>end</code> / <code>duration</code>. Endpoint
+            FormData entries are unaffected.
+         </p>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group id="fmt-group" output-format="interval">
+               <label slot="t0-label" for="fmt-t0">Start</label>
+               <nova-date slot="t0" id="fmt-t0" value="2026-05-01"></nova-date>
+               <label slot="t1-label" for="fmt-t1">End</label>
+               <nova-date slot="t1" id="fmt-t1" value="2026-05-08"></nova-date>
+               <output slot="output"><span class="output-label">ISO</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+
+            <p style="margin-top: var(--space-300);">
+               <label for="fmt-select">output-format:</label>
+               <select id="fmt-select" onchange="document.getElementById('fmt-group').outputFormat = this.value">
+                  <option value="duration">duration</option>
+                  <option value="end">end</option>
+                  <option value="interval" selected>interval</option>
+                  <option value="start-duration">start-duration</option>
+                  <option value="duration-end">duration-end</option>
+               </select>
+            </p>
+
+            <pre><code class="language-markup">&lt;nova-temporal-group output-format="interval"&gt;
+   &lt;nova-date slot="t0" value="2026-05-01"&gt;&lt;/nova-date&gt;
+   &lt;nova-date slot="t1" value="2026-05-08"&gt;&lt;/nova-date&gt;
+   &lt;output slot="output"&gt;…&lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>State Propagation</h2>
+         <p>
+            <code>disabled</code> and <code>readonly</code> on the group
+            propagate to every child input automatically. Set them once on the
+            group instead of plumbing them through each slotted element.
+         </p>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <nova-temporal-group disabled>
+               <label slot="t0-label" for="dis-t0">Start</label>
+               <nova-datetime slot="t0" id="dis-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <label slot="d0-label" for="dis-d0">For</label>
+               <nova-duration slot="d0" id="dis-d0" value="PT2H"></nova-duration>
+               <output slot="output"><span class="output-label">End</span> <span class="output-value"></span></output>
+            </nova-temporal-group>
+            <pre><code class="language-markup">&lt;nova-temporal-group disabled&gt;
+   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-duration slot="d0" value="PT2H"&gt;&lt;/nova-duration&gt;
+   &lt;output slot="output"&gt;…&lt;/output&gt;
+&lt;/nova-temporal-group&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+      <section class="demo-section">
+      <div class="instructions">
+         <h2>Form Integration</h2>
+         <p>
+            <code>nova-temporal-group</code> behaves like a
+            <code>&lt;fieldset&gt;</code>. With <code>name="window"</code>, each
+            child slot ships under <code>window[t0]</code>,
+            <code>window[t1]</code>, … plus a <code>window[output]</code>
+            entry for the computed value. Set <code>required</code> to block
+            submission until every slot has a complete, valid value.
+         </p>
+         <ol class="step-list">
+            <li>Submit the form — every entry is listed below the button.</li>
+            <li>Clear a segment in either input and try again — submission is blocked.</li>
+         </ol>
+      </div>
+
+      <div class="demo-wrapper">
+         <div class="demo-stage">
+            <form id="group-form">
+               <nova-temporal-group name="window" required>
+                  <label slot="t0-label" for="form-t0">Start</label>
+                  <nova-datetime slot="t0" id="form-t0" value="2026-05-01T09:00Z"></nova-datetime>
+                  <label slot="t1-label" for="form-t1">End</label>
+                  <nova-datetime slot="t1" id="form-t1" value="2026-05-01T17:00Z"></nova-datetime>
+                  <output slot="output"><span class="output-label">Duration</span> <span class="output-value"></span></output>
+               </nova-temporal-group>
+               <button type="submit" class="nova-button">Submit</button>
+               <output id="form-result" style="color: var(--color-text, #fff); font-family: ui-monospace, monospace; white-space: pre-line;"></output>
+            </form>
+            <pre><code class="language-markup">&lt;form&gt;
+   &lt;nova-temporal-group name="window" required&gt;
+      &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+      &lt;nova-datetime slot="t1" value="2026-05-01T17:00Z"&gt;&lt;/nova-datetime&gt;
+      &lt;output slot="output"&gt;…&lt;/output&gt;
+   &lt;/nova-temporal-group&gt;
+   &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+         </div>
+      </div>
+      </section>
+
+    </main>
+
+    <script>
+      if (typeof Temporal === 'undefined') {
+         document.getElementById('temporal-banner').dataset.visible = '';
+      }
+    </script>
+
+    <script>
+      document.addEventListener('nova-error', (e) => {
+         if (e.detail.code === 'paste-parse-error') {
+            alert(`Invalid date/time: ${e.detail.message}`);
+         }
+      });
+
+      document.querySelectorAll('[data-copy]').forEach((el) => {
+         el.addEventListener('click', async () => {
+            await navigator.clipboard.writeText(el.textContent.trim());
+            el.dataset.copied = 'true';
+            setTimeout(() => delete el.dataset.copied, 1200);
+         });
+      });
+
+      const form = document.getElementById('group-form');
+      const result = document.getElementById('form-result');
+      form?.addEventListener('submit', (e) => {
+         e.preventDefault();
+         const data = new FormData(form);
+         const lines = [];
+         for (const [k, v] of data) lines.push(`${k} = ${v}`);
+         result.textContent = lines.join('\n') || '(no entries)';
+      });
+    </script>
   </body>
 </html>

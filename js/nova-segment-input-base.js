@@ -156,12 +156,14 @@ baseSheet.replaceSync(`
 
   .separator, .suffix, .label-text, .prefix-text {
     pointer-events: none;
+    opacity: 0.45;
+  }
+
+  .separator {
     opacity: 0.6;
   }
 
-  .label-text, .prefix-text {
-    font-size: 0.8em;
-  }
+
 
   .label-text {
     margin-inline-start: 1px;
@@ -325,10 +327,14 @@ export class NovaSegmentInputBase extends HTMLElement {
             return;
          }
          case "readonly":
-            this.#internals.ariaReadOnly = String(this.hasAttribute("readonly"));
+            this.#internals.ariaReadOnly = String(
+               this.hasAttribute("readonly"),
+            );
             return;
          case "required":
-            this.#internals.ariaRequired = String(this.hasAttribute("required"));
+            this.#internals.ariaRequired = String(
+               this.hasAttribute("required"),
+            );
             if (this.#connected) this.#syncFormValue();
             return;
          case "min":
@@ -734,12 +740,18 @@ export class NovaSegmentInputBase extends HTMLElement {
    #validateRange(value = null) {
       // min/max attributes are validity-strict: if the author supplied an
       // unparseable string, throw rather than silently skipping the bound.
-      if (this.#minRaw != null && this._compareValues(this.#minRaw, this.#minRaw) === null) {
+      if (
+         this.#minRaw != null &&
+         this._compareValues(this.#minRaw, this.#minRaw) === null
+      ) {
          throw new RangeError(
             `${this.tagName.toLowerCase()}: min="${this.#minRaw}" is not a valid value for this component`,
          );
       }
-      if (this.#maxRaw != null && this._compareValues(this.#maxRaw, this.#maxRaw) === null) {
+      if (
+         this.#maxRaw != null &&
+         this._compareValues(this.#maxRaw, this.#maxRaw) === null
+      ) {
          throw new RangeError(
             `${this.tagName.toLowerCase()}: max="${this.#maxRaw}" is not a valid value for this component`,
          );
@@ -756,8 +768,10 @@ export class NovaSegmentInputBase extends HTMLElement {
             return;
          }
       }
-      const cmpMin = this.#minRaw != null ? this._compareValues(value, this.#minRaw) : null;
-      const cmpMax = this.#maxRaw != null ? this._compareValues(value, this.#maxRaw) : null;
+      const cmpMin =
+         this.#minRaw != null ? this._compareValues(value, this.#minRaw) : null;
+      const cmpMax =
+         this.#maxRaw != null ? this._compareValues(value, this.#maxRaw) : null;
       const underflow = cmpMin !== null && cmpMin < 0;
       const overflow = cmpMax !== null && cmpMax > 0;
 
@@ -804,7 +818,14 @@ export class NovaSegmentInputBase extends HTMLElement {
       set("optional", !isRequired);
 
       if (isDisabled) {
-         for (const s of ["invalid", "valid", "user-invalid", "user-valid", "in-range", "out-of-range"]) {
+         for (const s of [
+            "invalid",
+            "valid",
+            "user-invalid",
+            "user-valid",
+            "in-range",
+            "out-of-range",
+         ]) {
             states.delete(s);
          }
          return;
@@ -1007,7 +1028,8 @@ export class NovaSegmentInputBase extends HTMLElement {
 
    #onPaste = (e) => {
       e.preventDefault();
-      if (this.hasAttribute("disabled") || this.hasAttribute("readonly")) return;
+      if (this.hasAttribute("disabled") || this.hasAttribute("readonly"))
+         return;
       const text = e.clipboardData?.getData("text");
       if (text) this.#handlePasteText(text);
    };
@@ -1092,7 +1114,8 @@ export class NovaSegmentInputBase extends HTMLElement {
       const last = this.#segments.length - 1;
       const tabIndex = isDisabled ? -1 : 0;
       if (this.#segments[0]) this.#segments[0].tabIndex = tabIndex;
-      if (last > 0 && this.#segments[last]) this.#segments[last].tabIndex = tabIndex;
+      if (last > 0 && this.#segments[last])
+         this.#segments[last].tabIndex = tabIndex;
       if (isDisabled) {
          this.shadowRoot.activeElement?.blur();
       }
