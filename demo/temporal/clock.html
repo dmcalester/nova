@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Nova — Temporal Clock</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="/css/nova-tokens.css" />
+    <link rel="stylesheet" href="/css/nova-colors.css" />
+    <link rel="stylesheet" href="/css/nova.css" />
+    <link rel="stylesheet" href="/css/nova-form-patterns.css" />
+    <link rel="stylesheet" href="/css/nova-form-controls.css" />
+    <link rel="stylesheet" href="/css/components/nova-card.css" />
+
+    <script type="module" src="/js/nova-temporal/nova-clock.js"></script>
+
+
+    <style>
+
+      .nova-grid {
+         padding: 1rem;
+         display: grid;
+         gap: 1rem;
+         grid-template-columns: 1fr 1fr;
+      }
+
+    </style>
+
+  </head>
+  <body class="nova-grid">
+
+     <div class="nova-card">
+        <header><h2>Clock</h2></header>
+
+        <div class="nova-field">
+           <nova-clock></nova-clock>
+        </div>
+
+        <div class="nova-field">
+           <nova-clock zone="A"></nova-clock>
+        </div>
+
+        <div class="nova-field">
+           <nova-clock zone="N"></nova-clock>
+        </div>
+
+        <div class="nova-field">
+           <nova-clock zone="J"></nova-clock>
+        </div>
+
+     </div>
+
+     <div class="nova-card" style="color-scheme: light;">
+        <header><h2>Clock (Light Theme)</h2></header>
+
+        <div class="nova-field">
+           <nova-clock></nova-clock>
+        </div>
+
+        <div class="nova-field">
+           <nova-clock zone="a"></nova-clock>
+        </div>
+
+        <div class="nova-field">
+           <nova-clock zone="m"></nova-clock>
+        </div>
+
+     </div>
+
+  </body>
+</html>

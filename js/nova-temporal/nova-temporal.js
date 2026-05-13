@@ -405,6 +405,41 @@ export function nowUTC() {
    return Temporal.Now.plainDateTimeISO("UTC");
 }
 
+// ── Military (NATO single-letter) time zones ─────────────────────────────────
+// Fixed UTC offsets only. J ("Juliet") is intentionally excluded — it denotes
+// the observer's local time, not a fixed offset.
+export const MILITARY_ZONES = Object.freeze({
+   A: 1,  B: 2,  C: 3,  D: 4,  E: 5,  F: 6,  G: 7,  H: 8,  I: 9,
+   K: 10, L: 11, M: 12,
+   N: -1, O: -2, P: -3, Q: -4, R: -5, S: -6, T: -7, U: -8, V: -9,
+   W: -10, X: -11, Y: -12,
+   Z: 0,
+});
+
+/**
+ * @param {string} letter A–Z (case-insensitive), excluding J.
+ * @returns {number|null} offset hours, or null if not a valid military zone.
+ */
+export function militaryZoneOffset(letter) {
+   if (typeof letter !== "string" || letter.length !== 1) return null;
+   const key = letter.toUpperCase();
+   return Object.prototype.hasOwnProperty.call(MILITARY_ZONES, key)
+      ? MILITARY_ZONES[key]
+      : null;
+}
+
+/**
+ * @param {number} hours integer offset in -12..12 (J/0 maps to Z).
+ * @returns {string|null} single-letter military zone code, or null if no match.
+ */
+export function militaryZoneLetter(hours) {
+   if (!Number.isInteger(hours)) return null;
+   for (const [letter, offset] of Object.entries(MILITARY_ZONES)) {
+      if (offset === hours) return letter;
+   }
+   return null;
+}
+
 // ── Flexible parsing helpers ──────────────────────────────────────────────────
 
 /**

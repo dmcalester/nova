@@ -3,7 +3,9 @@
  *
  * Attributes:
  *   smallest-unit — minute | second | millisecond | microsecond | nanosecond
- *   show-date     — when present, prepends ordinal date (YYYY-DDD)
+ *   hide-date     — when present, hides the ordinal date (shown by default)
+ *   hide-year     — when present, shows only the day-of-year (DDD) without the year
+ *   zone          — military (NATO single-letter) time zone, default "Z" (UTC)
  *   stopped       — when present, pauses the clock
  */
 
@@ -13,13 +15,15 @@ import {
    formatTime,
    formatOrdinalDate,
    temporalToTimeRecord,
+   militaryZoneOffset,
 } from "./nova-temporal.js";
+import { reportNovaError } from "./nova-temporal-errors.js";
 
 const clockSheet = new CSSStyleSheet();
 clockSheet.replaceSync(`
   :host {
     display: inline-block;
-    font-family: var(--input-font-family, var(--font-stack));
+    font-family: var(--input-font-family);
     font-size: 1.75rem;
     font-variant-numeric: tabular-nums slashed-zero;
     font-feature-settings: "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv11", "cv10";
@@ -36,9 +40,24 @@ clockSheet.replaceSync(`
   }
 `);
 
+/** @param {number} hours integer offset, -12..12 */
+function formatOffset(hours) {
+   if (hours === 0) return "Z";
+   const sign = hours > 0 ? "+" : "-";
+   return `${sign}${String(Math.abs(hours)).padStart(2, "0")}:00`;
+}
+
+const TIME_PLACEHOLDERS = {
+   minute: "HH:MM",
+   second: "HH:MM:SS",
+   millisecond: "HH:MM:SS.mmm",
+   microsecond: "HH:MM:SS.uuuuuu",
+   nanosecond: "HH:MM:SS.nnnnnnnnn",
+};
+
 export class NovaClock extends HTMLElement {
    static get observedAttributes() {
-      return ["smallest-unit", "show-date", "stopped"];
+      return ["smallest-unit", "hide-date", "hide-year", "zone", "stopped"];
    }
 
    #timer = null;
@@ -46,6 +65,7 @@ export class NovaClock extends HTMLElement {
    #dateSpan;
    #timeSpan;
    #suffixSpan;
+   #lastReportedInvalidZone = null;
 
    constructor() {
       super();
@@ -83,8 +103,12 @@ export class NovaClock extends HTMLElement {
             this.#tick();
             this.#startTimer();
          }
-      } else if (name === "show-date") {
+      } else if (name === "hide-date") {
          this.#syncDateVisibility();
+         this.#tick();
+      } else if (name === "hide-year") {
+         this.#tick();
+      } else if (name === "zone") {
          this.#tick();
       } else {
          this.#tick();
@@ -103,32 +127,86 @@ export class NovaClock extends HTMLElement {
    }
 
    /** @returns {boolean} */
-   get showDate() {
-      return this.hasAttribute("show-date");
+   get hideDate() {
+      return this.hasAttribute("hide-date");
    }
 
    /** @param {boolean} v */
-   set showDate(v) {
-      if (v) this.setAttribute("show-date", "");
-      else this.removeAttribute("show-date");
+   set hideDate(v) {
+      if (v) this.setAttribute("hide-date", "");
+      else this.removeAttribute("hide-date");
+   }
+
+   /** @returns {boolean} */
+   get hideYear() {
+      return this.hasAttribute("hide-year");
+   }
+
+   /** @param {boolean} v */
+   set hideYear(v) {
+      if (v) this.setAttribute("hide-year", "");
+      else this.removeAttribute("hide-year");
+   }
+
+   /** @returns {string} normalized single-letter military zone code (default "Z") */
+   get zone() {
+      const raw = this.getAttribute("zone");
+      return raw == null || raw === "" ? "Z" : raw.toUpperCase();
+   }
+
+   /** @param {string} v */
+   set zone(v) {
+      this.setAttribute("zone", v);
    }
 
    #syncDateVisibility() {
-      this.#dateSpan.hidden = !this.showDate;
+      this.#dateSpan.hidden = this.hideDate;
    }
 
    #tick() {
-      const now = nowUTC();
+      const rawZone = this.zone;
+      const offset = militaryZoneOffset(rawZone);
+
+      if (offset === null) {
+         if (this.#lastReportedInvalidZone !== rawZone) {
+            this.#lastReportedInvalidZone = rawZone;
+            reportNovaError(
+               this,
+               "invalid-zone",
+               `Invalid military zone "${rawZone}" — showing placeholders`,
+               { zone: rawZone },
+            );
+         }
+         this.#timeSpan.textContent =
+            TIME_PLACEHOLDERS[this.smallestUnit] ?? TIME_PLACEHOLDERS.second;
+         this.#suffixSpan.textContent = "?";
+         this.#display.removeAttribute("datetime");
+         if (!this.hideDate) {
+            this.#dateSpan.textContent = this.hideYear ? "DDD" : "YYYY-DDD";
+         } else {
+            this.#dateSpan.textContent = "";
+         }
+         return;
+      }
+
+      this.#lastReportedInvalidZone = null;
+
+      const local = offset === 0 ? nowUTC() : nowUTC().add({ hours: offset });
       const unit = this.smallestUnit;
 
-      this.#timeSpan.textContent = formatTime(temporalToTimeRecord(now), unit);
+      this.#timeSpan.textContent = formatTime(temporalToTimeRecord(local), unit);
+      this.#suffixSpan.textContent = rawZone;
+      this.#display.setAttribute("datetime", `${local.toString()}${formatOffset(offset)}`);
 
-      if (this.showDate) {
-         const pd = now.toPlainDate();
-         this.#dateSpan.textContent = formatOrdinalDate({
+      if (!this.hideDate) {
+         const pd = local.toPlainDate();
+         const ordinal = formatOrdinalDate({
             year: pd.year,
             dayOfYear: pd.dayOfYear,
          });
+         this.#dateSpan.textContent = this.hideYear
+            ? ordinal.slice(ordinal.indexOf("-") + 1)
+            : ordinal;
       }
    }
 
@@ -136,7 +214,11 @@ export class NovaClock extends HTMLElement {
       if (this.hasAttribute("stopped")) return;
       this.#stopTimer();
 
-      if (["millisecond", "microsecond", "nanosecond"].includes(this.smallestUnit)) {
+      if (
+         ["millisecond", "microsecond", "nanosecond"].includes(
+            this.smallestUnit,
+         )
+      ) {
          // ~10fps for subsecond display — sufficient visual fidelity
          const step = () => {
             this.#tick();
