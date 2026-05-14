@@ -46,3 +46,4 @@ export { NovaDuration } from "./nova-duration.js";
 export { NovaDatetime } from "./nova-datetime.js";
 export { NovaTemporalGroup } from "./nova-temporal-group.js";
 export { NovaClock } from "./nova-clock.js";
+export { NovaElapsed } from "./nova-elapsed.js";

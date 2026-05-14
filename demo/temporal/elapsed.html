@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Nova — Elapsed Time</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="/css/nova-tokens.css" />
+    <link rel="stylesheet" href="/css/nova-colors.css" />
+    <link rel="stylesheet" href="/css/nova.css" />
+    <link rel="stylesheet" href="/css/nova-form-patterns.css" />
+    <link rel="stylesheet" href="/css/nova-form-controls.css" />
+    <link rel="stylesheet" href="/css/components/nova-card.css" />
+
+    <script type="module" src="/js/nova-temporal/nova-elapsed.js"></script>
+
+    <style>
+      .nova-grid {
+        padding: 1rem;
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      /* The out-of-range custom state engages once a threshold-behavior="warn"
+         counter passes its threshold. */
+      nova-elapsed:state(out-of-range) {
+        color: var(--color-danger, crimson);
+      }
+    </style>
+  </head>
+  <body class="nova-grid">
+    <div class="nova-card">
+      <header><h2>Mission Elapsed Time</h2></header>
+
+      <!-- MET runs through T-0 forever, unremarked — threshold-behavior="continue". -->
+      <div class="nova-field">
+        <label>Voyager 1</label>
+        <nova-elapsed prefix="T" threshold-behavior="continue" epoch="1977-09-05T12:56:00Z"></nova-elapsed>
+      </div>
+
+
+      <div class="nova-field">
+        <label>Voyager 2</label>
+        <nova-elapsed prefix="T" threshold-behavior="continue" largest-unit="years" epoch="1977-08-20T14:29:00Z"></nova-elapsed>
+      </div>
+
+      <div class="nova-field">
+        <nova-elapsed prefix="T" threshold-behavior="continue" smallest-unit="millisecond"
+                      epoch="2025-01-01T00:00:00Z"></nova-elapsed>
+      </div>
+
+      <div class="nova-field">
+        <nova-elapsed prefix="" threshold-behavior="continue" largest-unit="hour"
+                      epoch="2025-01-01T00:00:00Z"></nova-elapsed>
+      </div>
+    </div>
+
+    <div class="nova-card">
+      <header><h2>Countdown</h2></header>
+
+      <!-- Future epoch → counts down through T-. The default "freeze" holds at
+           the threshold and stays frozen across reloads; "warn" runs through
+           and flags it via :state(out-of-range). -->
+      <div class="nova-field">
+        <nova-elapsed prefix="L" epoch="2026-05-14T19:25:00Z"></nova-elapsed>
+      </div>
+
+      <div class="nova-field">
+        <nova-elapsed prefix="L" threshold-behavior="warn" epoch="2026-05-14T19:35:00Z"></nova-elapsed>
+      </div>
+    </div>
+  </body>
+</html>

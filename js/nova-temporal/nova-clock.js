@@ -11,7 +11,6 @@
 
 import { createNovaStyleSheets } from "../nova-stylesheets.js";
 import {
-   nowUTC,
    formatTime,
    formatOrdinalDate,
    temporalToTimeRecord,
@@ -23,7 +22,7 @@ const clockSheet = new CSSStyleSheet();
 clockSheet.replaceSync(`
   :host {
     display: inline-block;
-    font-family: var(--input-font-family);
+    font-family: var(--font-stack--monospace);
     font-size: 1.75rem;
     font-variant-numeric: tabular-nums slashed-zero;
     font-feature-settings: "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv11", "cv10";
@@ -40,9 +39,9 @@ clockSheet.replaceSync(`
   }
 `);
 
-/** @param {number} hours integer offset, -12..12 */
-function formatOffset(hours) {
-   if (hours === 0) return "Z";
+/** @param {number} hours integer offset, -12..12 — converts to an ISO timezone string */
+function offsetToTimeZone(hours) {
+   if (hours === 0) return "UTC";
    const sign = hours > 0 ? "+" : "-";
    return `${sign}${String(Math.abs(hours)).padStart(2, "0")}:00`;
 }
@@ -191,12 +190,19 @@ export class NovaClock extends HTMLElement {
 
       this.#lastReportedInvalidZone = null;
 
-      const local = offset === 0 ? nowUTC() : nowUTC().add({ hours: offset });
+      const zdt = Temporal.Now.zonedDateTimeISO(offsetToTimeZone(offset));
+      const local = zdt.toPlainDateTime();
       const unit = this.smallestUnit;
 
-      this.#timeSpan.textContent = formatTime(temporalToTimeRecord(local), unit);
+      this.#timeSpan.textContent = formatTime(
+         temporalToTimeRecord(local),
+         unit,
+      );
       this.#suffixSpan.textContent = rawZone;
-      this.#display.setAttribute("datetime", `${local.toString()}${formatOffset(offset)}`);
+      this.#display.setAttribute(
+         "datetime",
+         zdt.toString({ timeZoneName: "never" }),
+      );
 
       if (!this.hideDate) {
          const pd = local.toPlainDate();

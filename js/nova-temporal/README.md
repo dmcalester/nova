@@ -24,6 +24,7 @@ They are not designed for casual booking flows or consumer-facing date pickers. 
 | [nova-datetime](#nova-datetime) | `<nova-datetime>` | Combined date+time input |
 | [nova-temporal-group](#nova-temporal-group) | `<nova-temporal-group>` | Generic coordination wrapper for any temporal components |
 | [nova-clock](#nova-clock) | `<nova-clock>` | Live UTC clock display |
+| [nova-elapsed](#nova-elapsed) | `<nova-elapsed>` | Live count-up / count-down display (MET, T-minus) |
 
 ## Quick Start
 
@@ -551,6 +552,93 @@ Live UTC clock display for ops center use.
 
 - **Seconds/minutes**: Boundary-synced ticks — calculates ms until next second/minute boundary. Multiple instances stay aligned.
 - **Milliseconds**: 100ms `setTimeout` intervals.
+
+---
+
+## nova-elapsed
+
+Live count-up / count-down display for mission elapsed time (MET), T-minus
+countdowns, and similar ops displays. It shows the signed duration between a
+fixed `epoch` and now, ticking live. Neither the epoch nor the threshold is
+rendered — only the running count, laid out as `[prefix±][time]`.
+
+### Attributes
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `epoch` | ISO-8601 datetime | — | Reference instant the count runs from |
+| `prefix` | string | — | Sign-bearing token (e.g. `T`, `L`) rendered before `±` |
+| `threshold` | ISO-8601 duration | `PT0S` | The freeze / crossing point |
+| `threshold-behavior` | `freeze` `continue` `warn` | `freeze` | What the count does at the threshold (see below) |
+| `largest-unit` | `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `day` | Top of the display window |
+| `smallest-unit` | `day` `hour` `minute` `second` `millisecond` `microsecond` `nanosecond` | `second` | Bottom of the display window |
+| `stopped` | boolean | — | Pause the live tick |
+
+### Threshold Behavior
+
+`elapsed = now − epoch` increases monotonically and crosses `threshold` exactly
+once. `threshold-behavior` decides what the count does there:
+
+| Value | Count behavior | `:state(out-of-range)` |
+|-------|----------------|------------------------|
+| `freeze` (default) | **Stops** at the threshold and holds | — |
+| `continue` | **Runs through** the threshold, unremarked (e.g. `T-2s` becomes `T+2s`) | — |
+| `warn` | Runs through the threshold, **flagged** | set while past the threshold |
+
+The default `threshold` of `PT0S` puts the crossing at the epoch itself.
+
+**Mission Elapsed Time is a `continue` counter.** It runs *through* T-0 and
+counts up indefinitely — it has no stop, and the crossing is unremarkable. Use
+`warn` for a count whose crossing is operationally significant; use `freeze`
+(the default) for a count-down that should hold at T-0.
+
+#### Freeze vs. events — the footgun
+
+The **freeze** is a condition: it applies whenever `elapsed ≥ threshold`,
+witnessed live or not.
+
+The **events** (`threshold-crossed` / `elapsed-stopped`) are transitions: they
+fire only on a live not-crossed → crossed edge. A count already past the
+threshold at connect-time fires nothing — the first tick only establishes a
+baseline. So after a page reload a `freeze` count re-freezes *silently*, and a
+`continue`/`warn` count past its threshold emits no `threshold-crossed`. Treat
+the events as live notifications, not as the source of truth for "is this past
+its threshold" — read `:state(out-of-range)` (for `warn` counts) or the
+displayed value for the current picture.
+
+### Events
+
+Both bubble and are composed, with a flat detail `{ epoch, threshold, elapsed }`
+(all ISO-8601 strings).
+
+| Event | When |
+|-------|------|
+| `threshold-crossed` | The count is witnessed crossing the threshold with `threshold-behavior` `continue` or `warn` |
+| `elapsed-stopped` | The count is witnessed freezing at the threshold with `threshold-behavior="freeze"` |
+
+### Custom States
+
+| Selector | Meaning |
+|----------|---------|
+| `:state(out-of-range)` | `threshold-behavior="warn"` and the count has passed the threshold |
+
+### Example
+
+```html
+<!-- MET counting up from launch — runs through T-0 unremarked -->
+<nova-elapsed prefix="T" threshold-behavior="continue" epoch="2026-05-14T12:00:00Z"></nova-elapsed>
+
+<!-- T-minus countdown that holds at T-0 — freeze is the default -->
+<nova-elapsed prefix="T" epoch="2026-05-14T18:00:00Z"></nova-elapsed>
+
+<!-- A crossing that matters — runs through, flagged via :state(out-of-range) -->
+<nova-elapsed prefix="T" threshold-behavior="warn" epoch="2026-05-14T18:00:00Z"></nova-elapsed>
+```
+
+### Timer Behavior
+
+Same boundary-synced strategy as `nova-clock`: second/minute/hour/day windows
+resync to the next wall-clock boundary; sub-second windows fall back to ~10fps.
 
 ---
 
