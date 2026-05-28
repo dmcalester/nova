@@ -11,7 +11,7 @@ These components target operating environments where time is precise and consequ
 They are not designed for casual booking flows or consumer-facing date pickers. Locale-aware presentation, calendar popovers, and time-zone selection are out of scope. If your application asks "what date works for you?", reach for a more general-purpose component.
 
 >[!NOTE]
-> Nova’s Temporal implementation explicitly restricts its domain to UTC/Zulu implemented through Temporal’s [PlainDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/PlainDateTime) rather than [ZonedDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/ZonedDateTime) this was intentionally defensive by design. PlainDateTime is less complex. All datetimes in Nova are treated as UTC/Z.
+> Nova's temporal components use [PlainDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/PlainDateTime) internally as a calendar display type. UTC is enforced as an explicit serialization contract at the component boundary — all values are parsed from and emitted as ISO 8601 strings with a Z suffix. Timezone arithmetic is the responsibility of the data layer, not the component
 
 ## Components
 
