@@ -87,7 +87,6 @@ const DEFAULT_OUTPUT_FORMAT = {
 
 const TYPE_FAMILY = {
    Instant: "datetime",
-   PlainDateTime: "datetime",
    PlainDate: "date",
    PlainTime: "time",
    Duration: "duration",
