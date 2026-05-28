@@ -6,7 +6,9 @@
  * laid out as [prefix±][time], e.g. "T+ 005/12:30:00".
  *
  * Attributes:
- *   epoch              — ISO-8601 datetime; the reference instant the count runs from
+ *   epoch              — ISO-8601 datetime with Z suffix or numeric offset
+ *                        (e.g. "2026-02-09T14:30:00Z" or "...-05:00").
+ *                        Unzoned input is rejected (invalid-epoch).
  *   prefix             — string; the sign-bearing token (e.g. "T", "L") shown before ±
  *   threshold          — ISO-8601 duration; the freeze / crossing point, default "PT0S"
  *   threshold-behavior — what the count does at the threshold:

@@ -94,3 +94,42 @@ test('threshold-behavior="freeze": crossing fires elapsed-stopped and freezes', 
   });
   expect(fired).toBe(true);
 });
+
+test('nova-elapsed: unzoned epoch reports invalid-epoch and renders placeholder', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-elapsed.html');
+  const errorCode = await page.evaluate(() => {
+    return new Promise((resolve) => {
+      document.addEventListener('nova-error', (e) => {
+        if (e.detail.code === 'invalid-epoch') {
+          resolve(e.detail.code);
+        }
+      }, { once: true });
+      document.body.innerHTML = '<nova-elapsed epoch="2026-02-09T14:30:00"></nova-elapsed>';
+      setTimeout(() => resolve(null), 500);
+    });
+  });
+  expect(errorCode).toBe('invalid-epoch');
+  const text = await page.evaluate(() => document.querySelector('nova-elapsed').shadowRoot.textContent.trim());
+  expect(text.length).toBeGreaterThan(0); // placeholder rendered
+});
+
+test('nova-elapsed: epoch with offset (e.g. -05:00) accepted', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-elapsed.html');
+  const rendered = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-elapsed epoch="2020-01-01T00:00:00-05:00" threshold-behavior="continue"></nova-elapsed>';
+    const el = document.querySelector('nova-elapsed');
+    return el.shadowRoot.textContent.trim();
+  });
+  expect(rendered).not.toContain('?');
+  expect(rendered).not.toMatch(/^-+$/);
+});
+
+test('nova-elapsed: ordinal epoch with Z accepted', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-elapsed.html');
+  const rendered = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-elapsed epoch="2020-001T00:00:00Z" threshold-behavior="continue"></nova-elapsed>';
+    const el = document.querySelector('nova-elapsed');
+    return el.shadowRoot.textContent.trim();
+  });
+  expect(rendered).not.toContain('?');
+});
