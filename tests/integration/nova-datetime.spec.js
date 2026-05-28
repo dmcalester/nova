@@ -195,3 +195,66 @@ test('nova-datetime: setting value with unzoned string throws', async ({ page })
   });
   expect(threw).toBe(true);
 });
+
+test('nova-datetime: zone="-05:00" preserves canonical instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const temporalISO = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    return el.temporal.toString();
+  });
+  expect(temporalISO).toBe('2026-02-09T14:30:00Z');
+});
+
+test('nova-datetime: zone="-05:00" shifts displayed segments back five hours', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const hour = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    return el.getSegmentValueByName('hour');
+  });
+  expect(hour).toBe(9);
+});
+
+test('nova-datetime: zone change preserves canonical instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const result = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    const before = el.temporal.epochNanoseconds.toString();
+    el.setAttribute('zone', '-05:00');
+    const after = el.temporal.epochNanoseconds.toString();
+    return { before, after };
+  });
+  expect(result.before).toBe(result.after);
+});
+
+test('nova-datetime: IANA zone reports invalid-zone', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const code = await page.evaluate(async () => {
+    return new Promise((resolve) => {
+      document.addEventListener('nova-error', (e) => {
+        if (e.detail.code === 'invalid-zone') resolve(e.detail.code);
+      }, { once: true });
+      document.body.innerHTML =
+        '<nova-datetime zone="America/Denver" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    });
+  });
+  expect(code).toBe('invalid-zone');
+});
+
+test('nova-datetime: editing a segment in non-UTC zone recomposes correct instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const iso = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    // Display reads 09:30 in -05:00. Nudge minute from 30 to 31 (display 09:31 = 14:31Z).
+    el.setSegmentValueByName('minute', 31, true);
+    return el.temporal.toString();
+  });
+  expect(iso).toBe('2026-02-09T14:31:00Z');
+});

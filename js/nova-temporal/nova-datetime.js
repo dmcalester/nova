@@ -29,7 +29,10 @@ import {
    parseAnyDatetime,
    instantToZonedRecord,
    exceedsTimeSmallestUnit,
+   parseZone,
+   ordinalDateToPlainDate,
 } from "./nova-temporal.js";
+import { reportNovaError } from "./nova-temporal-errors.js";
 import {
    CALENDAR_DATE_DESCRIPTORS,
    CALENDAR_DATE_SEPARATORS,
@@ -84,6 +87,8 @@ export class NovaDatetime extends NovaTemporalInputBase {
    #format = "date";
    #smallestUnit = "second";
    #dateSegmentCount = 0;
+   #zone = "Z";
+   #lastReportedInvalidZone = null;
 
    static get temporalType() {
       return "Instant";
@@ -95,6 +100,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
          "format",
          "smallest-unit",
          "overflow",
+         "zone",
       ];
    }
 
@@ -109,6 +115,30 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
    get #isOrdinal() {
       return this.#format === "ordinal";
+   }
+
+   /** @returns {string} raw zone attribute value (default "Z") */
+   get zone() {
+      return this.getAttribute("zone") || "Z";
+   }
+
+   #zoneId() {
+      const raw = this.zone;
+      const zid = parseZone(raw);
+      if (zid == null) {
+         if (this.#lastReportedInvalidZone !== raw) {
+            this.#lastReportedInvalidZone = raw;
+            reportNovaError(
+               this,
+               "invalid-zone",
+               `Invalid zone "${raw}" — falling back to UTC`,
+               { zone: raw },
+            );
+         }
+         return "UTC";
+      }
+      this.#lastReportedInvalidZone = null;
+      return zid;
    }
 
    /** @returns {import("./nova-temporal.js").TimeSmallestUnit} */
@@ -155,11 +185,21 @@ export class NovaDatetime extends NovaTemporalInputBase {
    connectedCallback() {
       this.#format = this.getAttribute("format") || "date";
       this.#smallestUnit = this.getAttribute("smallest-unit") || "second";
+      this.#zone = this.getAttribute("zone") || "Z";
       this.#updateDescriptors();
       super.connectedCallback();
    }
 
    attributeChangedCallback(name, oldVal, newVal) {
+      if (name === "zone" && oldVal !== newVal) {
+         this.#zone = newVal || "Z";
+         // Preserve canonical instant: re-parse current value through new zone projection.
+         // Guard: skip if not yet connected — connectedCallback handles initial projection.
+         if (this.isConnected) {
+            const currentValue = this.value;
+            if (currentValue) this.parseAndSet(currentValue);
+         }
+      }
       if (
          oldVal !== newVal &&
          (name === "format" || name === "smallest-unit")
@@ -248,7 +288,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
       if (!strict) {
          const inst = parseAnyDatetime(s);
          if (inst) {
-            this.#applyParsedDatetime(instantToZonedRecord(inst, "UTC"), s);
+            this.#applyParsedDatetime(instantToZonedRecord(inst, this.#zoneId()), s);
             return;
          }
          throw new RangeError(
@@ -331,7 +371,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
       // Full datetime
       const inst = parseAnyDatetime(s);
       if (inst) {
-         this.#applyParsedDatetime(instantToZonedRecord(inst, "UTC"), s);
+         this.#applyParsedDatetime(instantToZonedRecord(inst, this.#zoneId()), s);
          return;
       }
 
@@ -383,7 +423,38 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
    /** @returns {Temporal.Instant|null} */
    _toTemporal() {
-      return parseAnyDatetime(this.formattedValue);
+      const zid = this.#zoneId();
+
+      let wall;
+      if (this.#isOrdinal) {
+         const pd = ordinalDateToPlainDate(
+            this.getSegmentValueByName("year"),
+            this.getSegmentValueByName("dayOfYear"),
+         );
+         wall = { year: pd.year, month: pd.month, day: pd.day };
+      } else {
+         wall = {
+            year: this.getSegmentValueByName("year"),
+            month: this.getSegmentValueByName("month"),
+            day: this.getSegmentValueByName("day"),
+         };
+      }
+
+      const timeRecord = buildTimeRecordFromSegments(
+         (n) => this.getSegmentValueByName(n),
+      );
+
+      try {
+         const overflow = this.getAttribute("overflow") === "reject"
+            ? "reject"
+            : "constrain";
+         return Temporal.ZonedDateTime.from(
+            { ...wall, ...timeRecord, timeZone: zid },
+            { overflow },
+         ).toInstant();
+      } catch {
+         return null;
+      }
    }
 
    /**
@@ -399,7 +470,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
    _setToNow() {
       const inst = Temporal.Now.instant();
-      const { date: pd, time: timeRecord } = instantToZonedRecord(inst, "UTC");
+      const { date: pd, time: timeRecord } = instantToZonedRecord(inst, this.#zoneId());
       const dateValues = this.#dateValuesFrom(pd);
       const timeValues = timeToSegmentValues(timeRecord, this.#smallestUnit);
       this.setAllSegmentValues([...dateValues, ...timeValues]);
