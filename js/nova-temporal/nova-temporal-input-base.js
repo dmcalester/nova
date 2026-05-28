@@ -15,14 +15,14 @@ import { NovaSegmentInputBase } from "../nova-segment-input-base.js";
 import { reportNovaError } from "./nova-temporal-errors.js";
 
 /**
- * @typedef {"PlainDateTime"|"PlainDate"|"PlainTime"|"Duration"|null} TemporalTypeName
+ * @typedef {"Instant"|"PlainDate"|"PlainTime"|"Duration"|null} TemporalTypeName
  */
 
 export class NovaTemporalInputBase extends NovaSegmentInputBase {
    /**
     * Temporal type identifier for interface contract.
     * Subclasses override with one of:
-    *   'PlainDateTime' | 'PlainDate' | 'PlainTime' | 'Duration'
+    *   'Instant' | 'PlainDate' | 'PlainTime' | 'Duration'
     *
     * @returns {TemporalTypeName}
     */
@@ -33,22 +33,17 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
    /**
     * Get the current value as a Temporal object.
     *
-    * For datetime components this is `Temporal.PlainDateTime` interpreted as
-    * UTC wall-clock time *by convention* — the library enforces UTC at the
-    * value boundary, but the type itself carries no timezone. Reading
-    * wall-clock fields (`.year`, `.hour`, …) returns the UTC values as
-    * expected.
+    * Per-subclass type:
+    *   <nova-datetime>     → Temporal.Instant
+    *   <nova-date> /
+    *   <nova-ordinal-date> → Temporal.PlainDate
+    *   <nova-time>         → Temporal.PlainTime
+    *   <nova-duration>     → Temporal.Duration
     *
-    * **Footgun:** do not call `.toZonedDateTime(nonUTC)` on the result. That
-    * interprets the wall-clock fields *as if* they were already in the target
-    * zone, producing the wrong instant. If you need an instant in a specific
-    * zone, parse from `.value` instead:
-    *   `Temporal.Instant.from(el.value).toZonedDateTimeISO('zone')`.
+    * Returns `null` when empty, or — for <nova-ordinal-date> in day-only mode
+    * — when the component cannot produce a Temporal value at all.
     *
-    * Returns `null` if the value is empty or — for `<nova-ordinal-date>` in
-    * day-only mode — if the component cannot produce a Temporal value at all.
-    *
-    * @returns {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
+    * @returns {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
     */
    get temporal() {
       if (this.isEmpty) return null;
@@ -64,7 +59,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     * external value string. Group wrappers should use this method instead of
     * private subclass internals.
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} t
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} t
     * @returns {string}
     */
    formatTemporal(t) {
@@ -106,7 +101,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     * Subclasses must override. Return `null` when the current configuration
     * cannot produce a Temporal value (e.g. day-only ordinal date).
     *
-    * @returns {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
+    * @returns {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
     */
    _toTemporal() {
       return null;
@@ -117,7 +112,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     * string (the same format `formattedValue` produces). Subclasses must
     * override.
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} _t
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} _t
     * @returns {string}
     */
    _formatTemporal(_t) {
