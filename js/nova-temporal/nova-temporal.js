@@ -482,18 +482,12 @@ export function parseZone(str) {
  *
  * @param {Temporal.Instant} instant
  * @param {string} zoneId  Temporal-valid zone identifier (output of parseZone)
- * @returns {{date: CalendarDateRecord & OrdinalDateRecord, time: TimeRecord}}
+ * @returns {{date: Temporal.PlainDate, time: TimeRecord}}
  */
 export function instantToZonedRecord(instant, zoneId) {
    const zdt = instant.toZonedDateTimeISO(zoneId);
-   const plainDate = zdt.toPlainDate();
    return {
-      date: {
-         year: plainDate.year,
-         month: plainDate.month,
-         day: plainDate.day,
-         dayOfYear: plainDate.dayOfYear,
-      },
+      date: zdt.toPlainDate(),
       time: temporalToTimeRecord(zdt),
    };
 }
