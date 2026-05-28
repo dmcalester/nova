@@ -312,7 +312,7 @@ export class NovaElapsed extends HTMLElement {
          // "crossed" the moment it truncates down onto the threshold.
          // Use ZonedDateTime for the until() call because Instant.until()
          // does not support calendar units (e.g. "day"); UTC ZDT preserves
-         // the same UTC-day semantics as the previous PlainDateTime approach.
+         // the same UTC-day semantics as the previous approach.
          const epochZDT = epochInstant.toZonedDateTimeISO("UTC");
          const nowZDT = Temporal.Now.instant().toZonedDateTimeISO("UTC");
          const exact = epochZDT.until(nowZDT, {

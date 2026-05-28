@@ -157,9 +157,8 @@ export class NovaDatetime extends NovaTemporalInputBase {
    }
 
    /**
-    * Convert a PlainDate (or PlainDateTime) to segment values for the
-    * current format.
-    * @param {Temporal.PlainDate|Temporal.PlainDateTime} pd
+    * Convert a PlainDate to segment values for the current format.
+    * @param {Temporal.PlainDate} pd
     * @returns {number[]}
     */
    #dateValuesFrom(pd) {
@@ -169,8 +168,8 @@ export class NovaDatetime extends NovaTemporalInputBase {
    }
 
    /**
-    * Format a PlainDate (or PlainDateTime) date part for the current format.
-    * @param {Temporal.PlainDate|Temporal.PlainDateTime} pd
+    * Format a PlainDate date part for the current format.
+    * @param {Temporal.PlainDate} pd
     * @returns {string}
     */
    #formatDateFrom(pd) {

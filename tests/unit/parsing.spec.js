@@ -170,6 +170,11 @@ test('parseAnyDatetime: unzoned string returns null', async ({ page }) => {
   expect(r).toBe(null);
 });
 
+test('parseAnyDatetime: unzoned ordinal returns null', async ({ page }) => {
+  const r = await page.evaluate(() => window.parseAnyDatetime('2026-040T14:30:00'));
+  expect(r).toBe(null);
+});
+
 test('parseAnyDatetime: garbage returns null', async ({ page }) => {
   const r = await page.evaluate(() => window.parseAnyDatetime('not a datetime'));
   expect(r).toBe(null);

@@ -63,9 +63,9 @@ function dateToRecord(pd) {
 }
 
 /**
- * Convert a Temporal.PlainTime or Temporal.PlainDateTime to a plain time record.
+ * Convert a Temporal.PlainTime to a plain time record.
  *
- * @param {Temporal.PlainTime|Temporal.PlainDateTime} t
+ * @param {Temporal.PlainTime} t
  * @returns {TimeRecord}
  */
 export function temporalToTimeRecord(t) {
