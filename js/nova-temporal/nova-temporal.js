@@ -440,6 +440,41 @@ export function militaryZoneLetter(hours) {
    return null;
 }
 
+const NUMERIC_OFFSET_REGEX = /^([+-])(\d{2}):(\d{2})$/;
+
+/**
+ * Parse a zone identifier accepted by nova-datetime / nova-clock attributes.
+ *
+ * Accepted inputs:
+ *   - Military single letter (Z, A–Y excluding J), case-insensitive
+ *   - Numeric offset "+HH:MM" or "-HH:MM" (with valid HH 00–23, MM 00–59)
+ *
+ * IANA names ("America/Denver", "Europe/London") are rejected: the library
+ * is fixed-offset only, which structurally excludes DST.
+ *
+ * @param {string} str
+ * @returns {string|null} A Temporal-valid zone identifier ("UTC", "+05:00",
+ *   "-09:00") or null if `str` is not an accepted zone.
+ */
+export function parseZone(str) {
+   if (typeof str !== "string" || str.length === 0) return null;
+
+   if (str.length === 1) {
+      const offset = militaryZoneOffset(str);
+      if (offset == null) return null;
+      if (offset === 0) return "UTC";
+      const sign = offset > 0 ? "+" : "-";
+      return `${sign}${String(Math.abs(offset)).padStart(2, "0")}:00`;
+   }
+
+   const m = NUMERIC_OFFSET_REGEX.exec(str);
+   if (!m) return null;
+   const hh = parseInt(m[2], 10);
+   const mm = parseInt(m[3], 10);
+   if (hh > 23 || mm > 59) return null;
+   return `${m[1]}${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 // ── Flexible parsing helpers ──────────────────────────────────────────────────
 
 /**
