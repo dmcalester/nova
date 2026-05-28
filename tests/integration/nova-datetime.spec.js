@@ -258,3 +258,44 @@ test('nova-datetime: editing a segment in non-UTC zone recomposes correct instan
   });
   expect(iso).toBe('2026-02-09T14:31:00Z');
 });
+
+test('nova-datetime: value-format="offset" emits with configured offset', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T09:30:00-05:00');
+});
+
+test('nova-datetime: value-format="z" (default) emits Z form regardless of zone', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T14:30:00Z');
+});
+
+test('nova-datetime: offset emission omits [zone] bracket', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="+05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T19:30:00+05:00');
+  expect(value).not.toContain('[');
+});
+
+test('nova-datetime: value-format="offset" with UTC zone uses +00:00 suffix', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T14:30:00+00:00');
+});

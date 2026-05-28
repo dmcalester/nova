@@ -100,6 +100,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
          "smallest-unit",
          "overflow",
          "zone",
+         "value-format",
       ];
    }
 
@@ -119,6 +120,11 @@ export class NovaDatetime extends NovaTemporalInputBase {
    /** @returns {string} raw zone attribute value (default "Z") */
    get zone() {
       return this.getAttribute("zone") || "Z";
+   }
+
+   /** @returns {"z"|"offset"} */
+   get valueFormat() {
+      return this.getAttribute("value-format") === "offset" ? "offset" : "z";
    }
 
    #zoneId() {
@@ -190,11 +196,44 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
    attributeChangedCallback(name, oldVal, newVal) {
       if (name === "zone" && oldVal !== newVal) {
-         // Preserve canonical instant: re-parse current value through new zone projection.
+         // Preserve canonical instant: re-project segments from old zone into new zone.
          // Guard: skip if not yet connected — connectedCallback handles initial projection.
-         if (this.isConnected) {
-            const currentValue = this.value;
-            if (currentValue) this.parseAndSet(currentValue);
+         if (this.isConnected && !this.isEmpty) {
+            // Rebuild the instant using the OLD zone so the canonical UTC instant is
+            // preserved across zone changes.  _toTemporal() already reads the current
+            // zone attribute (which is now newVal), so we re-derive from oldVal here.
+            const oldZid = parseZone(oldVal || "Z") ?? "UTC";
+            let wall;
+            if (this.#isOrdinal) {
+               const pd = ordinalDateToPlainDate(
+                  this.getSegmentValueByName("year"),
+                  this.getSegmentValueByName("dayOfYear"),
+               );
+               wall = { year: pd.year, month: pd.month, day: pd.day };
+            } else {
+               wall = {
+                  year: this.getSegmentValueByName("year"),
+                  month: this.getSegmentValueByName("month"),
+                  day: this.getSegmentValueByName("day"),
+               };
+            }
+            const timeRecord = buildTimeRecordFromSegments(
+               (n) => this.getSegmentValueByName(n),
+            );
+            try {
+               const inst = Temporal.ZonedDateTime.from(
+                  { ...wall, ...timeRecord, timeZone: oldZid },
+                  { overflow: "constrain" },
+               ).toInstant();
+               const newZid = parseZone(newVal || "Z") ?? "UTC";
+               const { date: pd, time: tr } = instantToZonedRecord(inst, newZid);
+               const dateValues = this.#dateValuesFrom(pd);
+               const timeValues = timeToSegmentValues(tr, this.#smallestUnit);
+               this.setAllSegmentValues([...dateValues, ...timeValues], true);
+            } catch {
+               // Guard: if recomposition fails, leave segments unchanged
+            }
+            return;
          }
       }
       if (
@@ -211,11 +250,20 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
    // ── Formatted value ──────────────────────────────────────────────────────
 
-   /** @returns {string} "YYYY-MM-DDTHH:MM:SS[.fff…]Z" or "YYYY-DDDT…Z" in ordinal mode */
+   /**
+    * @returns {string} formatted value string respecting `valueFormat`.
+    * Delegates to `_formatTemporal` so Z-form always reflects the UTC instant
+    * and offset-form emits with the configured zone's offset suffix.
+    */
    get formattedValue() {
-      const datePart = this.#formatDate();
-      const timePart = this.#formatTime();
-      return `${datePart}T${timePart}Z`;
+      const t = this._toTemporal();
+      if (!t) {
+         // Fallback to raw segment assembly (partial / invalid state)
+         const datePart = this.#formatDate();
+         const timePart = this.#formatTime();
+         return `${datePart}T${timePart}Z`;
+      }
+      return this._formatTemporal(t);
    }
 
    _rawFormattedValue() {
@@ -459,10 +507,16 @@ export class NovaDatetime extends NovaTemporalInputBase {
     * @returns {string}
     */
    _formatTemporal(t) {
+      if (this.valueFormat === "offset") {
+         const zid = this.#zoneId();
+         const { date: pd, time: timeRecord } = instantToZonedRecord(t, zid);
+         // parseZone returns "UTC" for Z/UTC input — treat as +00:00 offset suffix.
+         const offsetSuffix = zid === "UTC" ? "+00:00" : zid;
+         return `${this.#formatDateFrom(pd)}T${formatTime(timeRecord, this.#smallestUnit)}${offsetSuffix}`;
+      }
+      // Z form (default) — always derived from UTC projection regardless of display zone.
       const { date: pd, time: timeRecord } = instantToZonedRecord(t, "UTC");
-      const datePart = this.#formatDateFrom(pd);
-      const timePart = formatTime(timeRecord, this.#smallestUnit);
-      return `${datePart}T${timePart}Z`;
+      return `${this.#formatDateFrom(pd)}T${formatTime(timeRecord, this.#smallestUnit)}Z`;
    }
 
    _setToNow() {
