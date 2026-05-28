@@ -11,7 +11,7 @@ These components target operating environments where time is precise and consequ
 They are not designed for casual booking flows or consumer-facing date pickers. Locale-aware presentation, calendar popovers, and time-zone selection are out of scope. If your application asks "what date works for you?", reach for a more general-purpose component.
 
 >[!NOTE]
-> Nova's temporal components use [PlainDateTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/PlainDateTime) internally as a calendar display type. UTC is enforced as an explicit serialization contract at the component boundary — all values are parsed from and emitted as ISO 8601 strings with a Z suffix. Timezone arithmetic is the responsibility of the data layer, not the component
+> Nova's instant-bearing temporal components (`<nova-datetime>`, `<nova-clock>`, `<nova-elapsed>`) use [Temporal.Instant](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/Instant) as their canonical type. Display happens via on-demand `instant.toZonedDateTimeISO(zoneId)`. The `zone` attribute accepts fixed-offset zones only — military single letters (`Z`, `A`–`Y` excluding `J`) and numeric offsets (`±HH:MM`). IANA names are rejected. DST is excluded by construction.
 
 ## Components
 
@@ -55,7 +55,7 @@ The five input components extend `NovaTemporalInputBase`, which extends the doma
 - Required validation
 - Disabled/readonly states
 
-`NovaTemporalInputBase` adds the typed-value contract: `temporal` getter/setter, `temporalType`, `formatTemporal()`, and the `_toTemporal` / `_formatTemporal` hooks the five widgets implement.
+`NovaTemporalInputBase` adds the typed-value contract: `temporal` getter/setter, `temporalType`, `formatTemporal()`, and the `_toTemporal` / `_formatTemporal` hooks the five widgets implement. Per-subclass `temporal` type: `Temporal.Instant` for `<nova-datetime>`; `Temporal.PlainDate` for the date components; `Temporal.PlainTime` for `<nova-time>`; `Temporal.Duration` for `<nova-duration>`.
 
 Design tokens (`--input-*`, `--space-*`, `--font-*`, etc.) inherit from `:root` via CSS custom properties — no duplicate token declarations in shadow DOM.
 
@@ -66,8 +66,8 @@ All input components expose a standard interface for crossing the boundary (ISO 
 | Property | Type | Role |
 |----------|------|------|
 | `value` | string | ISO 8601 boundary value — what HTML attributes carry, what `FormData` returns, what wire protocols consume |
-| `temporal` | Temporal.* \| null | Programmatic currency at full nanosecond precision. `<nova-datetime>` intentionally exposes `Temporal.PlainDateTime`: a UTC field view whose `.value` serializes with `Z`. Consumers should treat `.value` as the stable boundary format. |
-| `temporalType` | string \| null | Type identifier: `'PlainDateTime'`, `'PlainDate'`, `'PlainTime'`, `'Duration'`, or `null` when the component is in a configuration that cannot produce a Temporal value (see `<nova-ordinal-date>` day-only mode) |
+| `temporal` | Temporal.* \| null | `<nova-datetime>` exposes `Temporal.Instant`. `<nova-date>`/`<nova-ordinal-date>` expose `Temporal.PlainDate`. `<nova-time>` exposes `Temporal.PlainTime`. `<nova-duration>` exposes `Temporal.Duration`. |
+| `temporalType` | string \| null | Type identifier: `'Instant'`, `'PlainDate'`, `'PlainTime'`, `'Duration'`, or `null` when the component is in a configuration that cannot produce a Temporal value (see `<nova-ordinal-date>` day-only mode) |
 | `formatTemporal(t)` | string | Public formatter for converting a Temporal object to this component's ISO value string |
 
 **Use `.value`** for HTML attributes, form submission, JSON serialization, anything that crosses out of the JavaScript runtime. This is what the components store on the DOM and what consumers read for serialization.
@@ -76,31 +76,20 @@ All input components expose a standard interface for crossing the boundary (ISO 
 
 **Components in degenerate configurations may report `temporalType: null`.** `<nova-ordinal-date>` does this in day-only mode (`value="040"`) — it cannot produce a `Temporal.PlainDate` without year context. Consumers should check `el.temporalType !== null` before reading `el.temporal`.
 
-**Avoid this footgun:** do not call `.toZonedDateTime(nonUTC)` on `.temporal`. Because `Temporal.PlainDateTime` carries no timezone, that method interprets the wall-clock fields *as if* they were already in the target zone — producing the wrong instant. If you need an instant in a specific zone, parse from `.value` instead:
-
-```javascript
-const instant = Temporal.Instant.from(el.value);
-const localized = instant.toZonedDateTimeISO('America/Denver');
-```
-
 ```javascript
 const input = document.querySelector('nova-datetime');
 
-// Boundary — ISO string (always Z on read; accepts any well-formed ISO 8601 on write)
+// Boundary — ISO string (always Z on read by default; configurable via value-format)
 input.value;                                        // '2026-02-09T14:30:00Z'
-input.value = '2026-02-09T15:00:00Z';               // stored as '2026-02-09T15:00:00Z'
-input.value = '2026-02-09T15:00:00-05:00';          // stored as '2026-02-09T20:00:00Z' (offset normalized)
+input.value = '2026-02-09T15:00:00Z';
+input.value = '2026-02-09T15:00:00-05:00';          // stored as '2026-02-09T20:00:00Z'
 input.value = '';                                   // clears
 
-// Programmatic — Temporal.PlainDateTime (UTC wall-clock by convention)
-input.temporal;                                     // Temporal.PlainDateTime instance
-input.temporal = Temporal.PlainDateTime.from('2026-02-09T16:00:00');
+// Programmatic — Temporal.Instant
+input.temporal;                                     // Temporal.Instant
+input.temporal = Temporal.Instant.from('2026-02-09T16:00:00Z');
 input.temporal = null;                              // clears
 input.temporal = Temporal.PlainDate.from('2026-02-09');  // throws TypeError
-
-// Format a Temporal object back to this component's ISO value
-input.formatTemporal(Temporal.PlainDateTime.from('2026-02-09T16:00:00'));
-// '2026-02-09T16:00:00Z'
 ```
 
 ---
@@ -270,6 +259,8 @@ Combined date+time input as a single component — all segments are in one flat 
 | `value` | ISO datetime string | — | e.g. `"2026-02-09T14:30:00Z"` |
 | `format` | `date` `ordinal` | `date` | Date format (`YYYY-MM-DD` or `YYYY-DDD`) |
 | `smallest-unit` | `minute` `second` `millisecond` `microsecond` `nanosecond` | `second` | Time segment granularity |
+| `zone` | military letter or numeric offset | `Z` | Display zone (e.g. `Z`, `A`, `-05:00`, `+09:30`). IANA names rejected. |
+| `value-format` | `z` `offset` | `z` | `.value` emission format. `z` is always UTC; `offset` reflects the configured zone. |
 | `name` | string | — | Form field name |
 | `min` | ISO datetime string | — | Minimum valid value |
 | `max` | ISO datetime string | — | Maximum valid value |
@@ -282,6 +273,12 @@ Combined date+time input as a single component — all segments are in one flat 
 ### Value Format
 
 `"YYYY-MM-DDThh:mm:ssZ"` (calendar) or `"YYYY-DDDThh:mm:ssZ"` (ordinal)
+
+### Zone & value-format
+
+The `zone` attribute shifts the displayed wall-clock segments without changing the canonical instant. Setting `zone="-05:00"` on a component with value `2026-02-09T14:30:00Z` displays segments showing `2026-02-09T09:30:00`; `.temporal` still returns the same Instant.
+
+`value-format="offset"` emits `.value` with the configured zone's offset suffix (e.g. `2026-02-09T09:30:00-05:00`), no `[zone]` bracket. `value-format="z"` (default) always emits the canonical Z form.
 
 ### Paste Behavior
 
@@ -402,7 +399,7 @@ Components are grouped into type families:
 
 | Family | Components | Mixable |
 |--------|-----------|---------|
-| DateTime | `nova-datetime` | Only with itself |
+| DateTime | `nova-datetime` | Only with itself. Canonical type is `Temporal.Instant`. |
 | Date | `nova-date`, `nova-ordinal-date` | Yes (same underlying type) |
 | Time | `nova-time` | Only with itself |
 | Duration | `nova-duration` | N/A (separate role) |
@@ -540,6 +537,7 @@ Live UTC clock display for ops center use.
 |-----------|--------|---------|-------------|
 | `smallest-unit` | `minute` `second` `millisecond` | `second` | Display granularity |
 | `show-date` | boolean | — | Prepend ordinal date (YYYY-DDD) |
+| `zone` | military letter or numeric offset | `Z` (UTC) | Display zone (e.g. `Z`, `A`, `-05:00`, `+09:30`). |
 | `stopped` | boolean | — | Pause the clock |
 
 ### Example
@@ -566,7 +564,7 @@ rendered — only the running count, laid out as `[prefix±][time]`.
 
 | Attribute | Values | Default | Description |
 |-----------|--------|---------|-------------|
-| `epoch` | ISO-8601 datetime | — | Reference instant the count runs from |
+| `epoch` | ISO-8601 datetime | — | Reference instant the count runs from. The epoch string must include `Z` or a numeric offset; unzoned input is rejected (`invalid-epoch`). |
 | `prefix` | string | — | Sign-bearing token (e.g. `T`, `L`) rendered before `±` |
 | `threshold` | ISO-8601 duration | `PT0S` | The freeze / crossing point |
 | `threshold-behavior` | `freeze` `continue` `warn` | `freeze` | What the count does at the threshold (see below) |
@@ -787,6 +785,7 @@ import {
   ordinalDateToPlainDate,
   parseOrdinalDate,
   formatOrdinalDate,
+  parseZone,
 } from './js/nova-temporal/index.js';
 ```
 
@@ -798,10 +797,10 @@ Use the native Temporal methods directly — the library does not wrap them.
 const start = document.querySelector('#start-time').temporal;
 
 const end = start.add(Temporal.Duration.from('PT2H30M'));
-// Temporal.PlainDateTime — start plus 2h30m
+// Temporal.Instant — start plus 2h30m
 
 const beforeStart = start.subtract(Temporal.Duration.from('PT15M'));
-// Temporal.PlainDateTime — start minus 15m
+// Temporal.Instant — start minus 15m
 
 const dur = start.until(end);
 // Temporal.Duration from start to end
@@ -837,12 +836,19 @@ formatOrdinalDate({ year: 2026, dayOfYear: 40 });
 To work with an ISO string from middleware or storage, parse at the boundary:
 
 ```javascript
-const dur = Temporal.PlainDateTime.from(startISO).until(
-  Temporal.PlainDateTime.from(endISO),
-);
+const dur = Temporal.Instant.from(startISO).until(Temporal.Instant.from(endISO));
 ```
 
 The library does not wrap `Temporal.*.from()` — it's the standard API and one line at the boundary keeps the call sites honest about where parsing happens.
+
+### Zone parsing
+
+```javascript
+parseZone('Z');                   // 'UTC'
+parseZone('A');                   // '+01:00'
+parseZone('-05:00');              // '-05:00'
+parseZone('America/Denver');      // null — IANA rejected
+```
 
 ---
 
@@ -880,9 +886,9 @@ The production console message is intentionally generic: production deployments 
 | `value-parse-error` | `<nova-*>` segment input | The `value` attribute (or attribute-path `setAttribute("value", …)`) cannot be parsed; the component falls back to placeholders |
 | `paste-parse-error` | `<nova-*>` segment input | A pasted string cannot be parsed |
 | `paste-range` | `<nova-*>` segment input | Pasted value parses but is out of `min`/`max` |
-| `datetime-parse-error` | `nova-temporal.js` | Offset-bearing datetime fails `Instant.from` |
 | `constraint-parse-error` | `<nova-temporal-group>` | `min`/`max` attribute on the group is unparseable; the group is `customError`-invalid until corrected |
-| `compute-error` | `<nova-temporal-group>` | A `Temporal.*` operation throws while computing the group's output (e.g. `PlainDate.add({ months: 1 }, { overflow: "reject" })` on Jan 31). The group is `customError`-invalid and the output reads `Invalid` |
+| `compute-error` | `<nova-temporal-group>` | A `Temporal.*` op throws while computing the group's output (e.g. `PlainDate.add({ months: 1 }, { overflow: "reject" })`); OR a calendar-unit duration (years/months/days) is applied to an Instant t0 (use `PT`-form durations instead). |
+| `invalid-zone` | `<nova-datetime>`, `<nova-clock>` | The `zone` attribute is not a military letter, `Z`, or numeric offset. Components render placeholders until corrected. |
 | `type-incompatibility` | `<nova-temporal-group>` | Sibling temporal slots mix incompatible families (e.g. PlainTime with PlainDate). Group surfaces this as `customError` |
 | `output-slot-shape` | `<nova-temporal-group>` | The `slot="output"` element is not an `<output>` or is missing a `.output-value` descendant. Authoring hint, not a runtime failure |
 
