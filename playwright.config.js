@@ -13,6 +13,7 @@ export default defineConfig({
   projects: [
     { name: 'unit', testMatch: 'tests/unit/**/*.spec.js' },
     { name: 'integration', testMatch: 'tests/integration/**/*.spec.js' },
+    { name: 'edge-cases', testMatch: 'tests/edge-cases/**/*.spec.js' },
     {
       name: 'visual',
       testMatch: 'tests/visual/**/*.spec.js',
