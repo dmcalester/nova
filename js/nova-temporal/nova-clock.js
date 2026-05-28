@@ -3,15 +3,38 @@
  *
  * Attributes:
  *   smallest-unit — minute | second | millisecond | microsecond | nanosecond
- *   hide-date     — when present, hides the ordinal date (shown by default)
- *   hide-year     — when present, shows only the day-of-year (DDD) without the year
+ *   format        — "ordinal" (YYYY-DDD, default) or "date" (YYYY-MM-DD)
+ *   hide-date     — when present, hides the date (shown by default)
+ *   hide-year     — when present, shows the date without the year (DDD or MM-DD)
  *   zone          — military (NATO single-letter) time zone, default "Z" (UTC)
  *   stopped       — when present, pauses the clock
+ *
+ * CSS custom properties:
+ *   Defaults inherit from the surrounding text — set any of these to opt in.
+ *   Per-component `--clock-*` tokens win over the shared `--time-*` family;
+ *   set `--time-*` once to style both <nova-clock> and <nova-elapsed>, or
+ *   override per component.
+ *
+ *   --time-font-family,    --clock-font-family
+ *   --time-font-size,      --clock-font-size
+ *   --time-font-weight,    --clock-font-weight
+ *   --time-line-height,    --clock-line-height
+ *   --time-color,          --clock-color
+ *   --time-background,     --clock-background
+ *   --time-border,         --clock-border           (shorthand)
+ *   --time-border-radius,  --clock-border-radius
+ *   --time-padding,        --clock-padding
+ *   --time-outline,        --clock-outline          (shorthand)
+ *   --time-outline-offset, --clock-outline-offset
+ *
+ *   Component-only:
+ *     --clock-suffix-opacity  — opacity of the trailing zone letter (default 0.6)
  */
 
 import { createNovaStyleSheets } from "../nova-stylesheets.js";
 import {
    formatTime,
+   formatCalendarDate,
    formatOrdinalDate,
    temporalToTimeRecord,
    militaryZoneOffset,
@@ -22,20 +45,32 @@ const clockSheet = new CSSStyleSheet();
 clockSheet.replaceSync(`
   :host {
     display: inline-block;
-    font-family: var(--font-stack--monospace);
-    font-size: 1.75rem;
     font-variant-numeric: tabular-nums slashed-zero;
-    font-feature-settings: "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv11", "cv10";
-    line-height: var(--input-line-height, var(--line-height));
-    color: var(--input-text-color);
+    font-feature-settings: "case", "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv11", "cv10";
+
+    font-family: var(--clock-font-family, var(--time-font-family));
+    font-size: var(--clock-font-size, var(--time-font-size));
+    font-weight: var(--clock-font-weight, var(--time-font-weight));
+    line-height: var(--clock-line-height, var(--time-line-height));
+    color: var(--clock-color, var(--time-color));
+    background: var(--clock-background, var(--time-background));
+    border: var(--clock-border, var(--time-border));
+    border-radius: var(--clock-border-radius, var(--time-border-radius));
+    padding: var(--clock-padding, var(--time-padding));
+    outline: var(--clock-outline, var(--time-outline));
+    outline-offset: var(--clock-outline-offset, var(--time-outline-offset));
   }
 
   .suffix {
-    opacity: 0.6;
+    opacity: var(--clock-suffix-opacity, 0.6);
+    margin-inline-start: 1px;
   }
 
-  .date {
-    margin-inline-end: 0.35em;
+  /* Mirrors .datetime-separator in nova-segment-input-base.js */
+  .datetime-separator {
+    opacity: var(--clock-suffix-opacity, 0.6);
+    margin-inline-start: 3px;
+    margin-inline-end: 2px;
   }
 `);
 
@@ -54,14 +89,27 @@ const TIME_PLACEHOLDERS = {
    nanosecond: "HH:MM:SS.nnnnnnnnn",
 };
 
+const DATE_PLACEHOLDERS = {
+   ordinal: { full: "YYYY-DDD", noYear: "DDD" },
+   date: { full: "YYYY-MM-DD", noYear: "MM-DD" },
+};
+
 export class NovaClock extends HTMLElement {
    static get observedAttributes() {
-      return ["smallest-unit", "hide-date", "hide-year", "zone", "stopped"];
+      return [
+         "smallest-unit",
+         "format",
+         "hide-date",
+         "hide-year",
+         "zone",
+         "stopped",
+      ];
    }
 
    #timer = null;
    #display;
    #dateSpan;
+   #dateSeparator;
    #timeSpan;
    #suffixSpan;
    #lastReportedInvalidZone = null;
@@ -74,13 +122,21 @@ export class NovaClock extends HTMLElement {
       this.#display = document.createElement("time");
       this.#dateSpan = document.createElement("span");
       this.#dateSpan.className = "date";
+      this.#dateSeparator = document.createElement("span");
+      this.#dateSeparator.className = "datetime-separator";
+      this.#dateSeparator.textContent = "T";
       this.#timeSpan = document.createElement("span");
       this.#timeSpan.className = "time";
       this.#suffixSpan = document.createElement("span");
       this.#suffixSpan.className = "suffix";
       this.#suffixSpan.textContent = "Z";
 
-      this.#display.append(this.#dateSpan, this.#timeSpan, this.#suffixSpan);
+      this.#display.append(
+         this.#dateSpan,
+         this.#dateSeparator,
+         this.#timeSpan,
+         this.#suffixSpan,
+      );
       this.shadowRoot.appendChild(this.#display);
    }
 
@@ -105,7 +161,7 @@ export class NovaClock extends HTMLElement {
       } else if (name === "hide-date") {
          this.#syncDateVisibility();
          this.#tick();
-      } else if (name === "hide-year") {
+      } else if (name === "hide-year" || name === "format") {
          this.#tick();
       } else if (name === "zone") {
          this.#tick();
@@ -123,6 +179,16 @@ export class NovaClock extends HTMLElement {
    /** @param {"minute"|"second"|"millisecond"|"microsecond"|"nanosecond"} v */
    set smallestUnit(v) {
       this.setAttribute("smallest-unit", v);
+   }
+
+   /** @returns {"ordinal"|"date"} date rendering style (default "ordinal") */
+   get format() {
+      return this.getAttribute("format") === "date" ? "date" : "ordinal";
+   }
+
+   /** @param {"ordinal"|"date"} v */
+   set format(v) {
+      this.setAttribute("format", v);
    }
 
    /** @returns {boolean} */
@@ -159,7 +225,9 @@ export class NovaClock extends HTMLElement {
    }
 
    #syncDateVisibility() {
-      this.#dateSpan.hidden = this.hideDate;
+      const hidden = this.hideDate;
+      this.#dateSpan.hidden = hidden;
+      this.#dateSeparator.hidden = hidden;
    }
 
    #tick() {
@@ -181,7 +249,10 @@ export class NovaClock extends HTMLElement {
          this.#suffixSpan.textContent = "?";
          this.#display.removeAttribute("datetime");
          if (!this.hideDate) {
-            this.#dateSpan.textContent = this.hideYear ? "DDD" : "YYYY-DDD";
+            const placeholders = DATE_PLACEHOLDERS[this.format];
+            this.#dateSpan.textContent = this.hideYear
+               ? placeholders.noYear
+               : placeholders.full;
          } else {
             this.#dateSpan.textContent = "";
          }
@@ -194,26 +265,39 @@ export class NovaClock extends HTMLElement {
       const local = zdt.toPlainDateTime();
       const unit = this.smallestUnit;
 
-      this.#timeSpan.textContent = formatTime(
-         temporalToTimeRecord(local),
-         unit,
-      );
+      const timeText = formatTime(temporalToTimeRecord(local), unit);
+      this.#timeSpan.textContent = timeText;
       this.#suffixSpan.textContent = rawZone;
-      this.#display.setAttribute(
-         "datetime",
-         zdt.toString({ timeZoneName: "never" }),
-      );
+
+      // datetime attribute mirrors what's rendered: the date in the active
+      // format, time truncated to `smallest-unit`, and the military zone
+      // letter ("Z" for UTC, single letter for the others). Full-precision
+      // offset form would contradict the visible text.
+      const pd = local.toPlainDate();
+      const dateText =
+         this.format === "date"
+            ? formatCalendarDate({
+                 year: pd.year,
+                 month: pd.month,
+                 day: pd.day,
+              })
+            : formatOrdinalDate({
+                 year: pd.year,
+                 dayOfYear: pd.dayOfYear,
+              });
 
       if (!this.hideDate) {
-         const pd = local.toPlainDate();
-         const ordinal = formatOrdinalDate({
-            year: pd.year,
-            dayOfYear: pd.dayOfYear,
-         });
          this.#dateSpan.textContent = this.hideYear
-            ? ordinal.slice(ordinal.indexOf("-") + 1)
-            : ordinal;
+            ? dateText.slice(dateText.indexOf("-") + 1)
+            : dateText;
       }
+
+      this.#display.setAttribute(
+         "datetime",
+         this.hideDate
+            ? `${timeText}${rawZone}`
+            : `${dateText}T${timeText}${rawZone}`,
+      );
    }
 
    #startTimer() {

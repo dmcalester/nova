@@ -26,6 +26,28 @@
  *                       threshold with threshold-behavior "continue" or "warn".
  *   elapsed-stopped   — fired once when the count is witnessed freezing at the
  *                       threshold with threshold-behavior "freeze".
+ *
+ * CSS custom properties:
+ *   Defaults inherit from the surrounding text — set any of these to opt in.
+ *   Per-component `--elapsed-*` tokens win over the shared `--time-*` family;
+ *   set `--time-*` once to style both <nova-clock> and <nova-elapsed>, or
+ *   override per component. Use `nova-elapsed:state(out-of-range) { color: … }`
+ *   to style the warn state.
+ *
+ *   --time-font-family,    --elapsed-font-family
+ *   --time-font-size,      --elapsed-font-size
+ *   --time-font-weight,    --elapsed-font-weight
+ *   --time-line-height,    --elapsed-line-height
+ *   --time-color,          --elapsed-color
+ *   --time-background,     --elapsed-background
+ *   --time-border,         --elapsed-border           (shorthand)
+ *   --time-border-radius,  --elapsed-border-radius
+ *   --time-padding,        --elapsed-padding
+ *   --time-outline,        --elapsed-outline          (shorthand)
+ *   --time-outline-offset, --elapsed-outline-offset
+ *
+ *   Component-only:
+ *     --elapsed-prefix-spacing — margin-inline-end on the prefix+sign span (default 0)
  */
 
 import { createNovaStyleSheets } from "../nova-stylesheets.js";
@@ -36,17 +58,24 @@ const elapsedSheet = new CSSStyleSheet();
 elapsedSheet.replaceSync(`
   :host {
     display: inline-block;
-    font-family: var(--input-font-family);
-    // font-family: var(--font-stack--monospace);
-    font-size: 1.75rem;
     font-variant-numeric: tabular-nums slashed-zero;
-    font-feature-settings: "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv11", "cv10";
-    line-height: var(--input-line-height, var(--line-height));
-    color: var(--input-text-color);
+    font-feature-settings: "case", "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv11", "cv10";
+
+    font-family: var(--elapsed-font-family, var(--time-font-family));
+    font-size: var(--elapsed-font-size, var(--time-font-size));
+    font-weight: var(--elapsed-font-weight, var(--time-font-weight));
+    line-height: var(--elapsed-line-height, var(--time-line-height));
+    color: var(--elapsed-color, var(--time-color));
+    background: var(--elapsed-background, var(--time-background));
+    border: var(--elapsed-border, var(--time-border));
+    border-radius: var(--elapsed-border-radius, var(--time-border-radius));
+    padding: var(--elapsed-padding, var(--time-padding));
+    outline: var(--elapsed-outline, var(--time-outline));
+    outline-offset: var(--elapsed-outline-offset, var(--time-outline-offset));
   }
 
   .prefix {
-    margin-inline-end: 0.35em;
+    margin-inline-end: var(--elapsed-prefix-spacing, 0);
   }
 `);
 
@@ -306,7 +335,18 @@ export class NovaElapsed extends HTMLElement {
                : round(exact);
 
          this.#render(displayValue);
-         this.#display.setAttribute("datetime", displayValue.toString());
+         // datetime attribute matches the rendered precision: force the
+         // sub-second digit count when the window goes below seconds, so
+         // a zero fractional component is preserved (".000" not omitted).
+         const subSecondDigits = FRACTION_DIGITS[this.smallestUnit];
+         this.#display.setAttribute(
+            "datetime",
+            displayValue.toString(
+               subSecondDigits != null
+                  ? { fractionalSecondDigits: subSecondDigits }
+                  : {},
+            ),
+         );
       } catch (e) {
          this.#reportOnce(
             "elapsed-compute-error",

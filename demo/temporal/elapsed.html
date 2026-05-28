@@ -22,6 +22,10 @@
         grid-template-columns: 1fr 1fr;
       }
 
+      p {
+         line-height: 1.4;
+      }
+
       /* The out-of-range custom state engages once a threshold-behavior="warn"
          counter passes its threshold. */
       nova-elapsed:state(out-of-range) {
@@ -37,6 +41,12 @@
       <div class="nova-field">
         <label>Voyager 1</label>
         <nova-elapsed prefix="T" threshold-behavior="continue" epoch="1977-09-05T12:56:00Z"></nova-elapsed>
+      </div>
+
+
+      <div class="nova-field">
+
+        <p>Voyager 1’s MET is currently: <nova-elapsed prefix="T" threshold-behavior="continue" epoch="1977-09-05T12:56:00Z"></nova-elapsed> while Voyager 2 is <nova-elapsed prefix="T" threshold-behavior="continue" largest-unit="years" epoch="1977-08-20T14:29:00Z"></nova-elapsed>. Voyager 1 launched after Voyager 2. The story is Voyager 2 is actually the third built Voyager probe, and suffered a mechanical issue, so Voyager 2 became Voayger 1</p>
       </div>
 
 
