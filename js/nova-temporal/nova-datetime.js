@@ -87,7 +87,6 @@ export class NovaDatetime extends NovaTemporalInputBase {
    #format = "date";
    #smallestUnit = "second";
    #dateSegmentCount = 0;
-   #zone = "Z";
    #lastReportedInvalidZone = null;
 
    static get temporalType() {
@@ -185,14 +184,12 @@ export class NovaDatetime extends NovaTemporalInputBase {
    connectedCallback() {
       this.#format = this.getAttribute("format") || "date";
       this.#smallestUnit = this.getAttribute("smallest-unit") || "second";
-      this.#zone = this.getAttribute("zone") || "Z";
       this.#updateDescriptors();
       super.connectedCallback();
    }
 
    attributeChangedCallback(name, oldVal, newVal) {
       if (name === "zone" && oldVal !== newVal) {
-         this.#zone = newVal || "Z";
          // Preserve canonical instant: re-parse current value through new zone projection.
          // Guard: skip if not yet connected — connectedCallback handles initial projection.
          if (this.isConnected) {
