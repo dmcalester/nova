@@ -16,7 +16,7 @@
  *   - Has d[N] slots → compute mode (output: computed temporal)
  *
  * Type compatibility:
- *   - PlainDateTime family: nova-datetime
+ *   - Instant family: nova-datetime
  *   - PlainDate family: nova-date, nova-ordinal-date
  *   - PlainTime family: nova-time
  *   - Duration: nova-duration
@@ -662,7 +662,7 @@ export class NovaTemporalGroup extends HTMLElement {
     *   invalid: boolean,
     *   slots: Record<string, {
     *     value: string,
-    *     temporal: Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null,
+    *     temporal: Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null,
     *     valid: boolean
     *   }>
     * }}
@@ -848,7 +848,7 @@ export class NovaTemporalGroup extends HTMLElement {
     * components; PlainDate anchors cannot absorb sub-day components. Empty
     * slots are skipped (caller decides what to do with incomplete state).
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null} anchor
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null} anchor
     * @returns {boolean}
     */
    #durationsCompatibleWithAnchor(anchor) {
@@ -886,8 +886,8 @@ export class NovaTemporalGroup extends HTMLElement {
     * PlainTime endpoints use native PlainTime.until() directly. Time-only
     * ranges do not infer dates or overnight/next-occurrence semantics.
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime} first
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime} last
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime} first
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime} last
     * @returns {Temporal.Duration}
     */
    #computeRangeDuration(first, last) {
@@ -907,7 +907,7 @@ export class NovaTemporalGroup extends HTMLElement {
     * API call throws. Caller is expected to gate truncation risk via
     * #durationsCompatibleWithAnchor first.
     *
-    * @template {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} T
+    * @template {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} T
     * @param {T} anchor
     * @returns {T|null}
     */
@@ -1309,9 +1309,9 @@ export class NovaTemporalGroup extends HTMLElement {
    }
 
    /**
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} a
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} b
-    * @param {string} temporalType  - "PlainDateTime" | "PlainDate" | "PlainTime" | "Duration"
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} a
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} b
+    * @param {string} temporalType  - "Instant" | "PlainDate" | "PlainTime" | "Duration"
     * @returns {-1|0|1|null}
     */
    #compareTemporal(a, b, temporalType) {
