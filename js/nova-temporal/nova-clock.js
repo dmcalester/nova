@@ -36,8 +36,8 @@ import {
    formatTime,
    formatCalendarDate,
    formatOrdinalDate,
-   temporalToTimeRecord,
-   militaryZoneOffset,
+   parseZone,
+   instantToZonedRecord,
 } from "./nova-temporal.js";
 import { reportNovaError } from "./nova-temporal-errors.js";
 
@@ -73,13 +73,6 @@ clockSheet.replaceSync(`
     margin-inline-end: 2px;
   }
 `);
-
-/** @param {number} hours integer offset, -12..12 — converts to an ISO timezone string */
-function offsetToTimeZone(hours) {
-   if (hours === 0) return "UTC";
-   const sign = hours > 0 ? "+" : "-";
-   return `${sign}${String(Math.abs(hours)).padStart(2, "0")}:00`;
-}
 
 const TIME_PLACEHOLDERS = {
    minute: "HH:MM",
@@ -232,15 +225,15 @@ export class NovaClock extends HTMLElement {
 
    #tick() {
       const rawZone = this.zone;
-      const offset = militaryZoneOffset(rawZone);
+      const zoneId = parseZone(rawZone);
 
-      if (offset === null) {
+      if (zoneId == null) {
          if (this.#lastReportedInvalidZone !== rawZone) {
             this.#lastReportedInvalidZone = rawZone;
             reportNovaError(
                this,
                "invalid-zone",
-               `Invalid military zone "${rawZone}" — showing placeholders`,
+               `Invalid zone "${rawZone}" — showing placeholders`,
                { zone: rawZone },
             );
          }
@@ -261,30 +254,18 @@ export class NovaClock extends HTMLElement {
 
       this.#lastReportedInvalidZone = null;
 
-      const zdt = Temporal.Now.zonedDateTimeISO(offsetToTimeZone(offset));
-      const local = zdt.toPlainDateTime();
+      const inst = Temporal.Now.instant();
+      const { date: pd, time: timeRecord } = instantToZonedRecord(inst, zoneId);
       const unit = this.smallestUnit;
 
-      const timeText = formatTime(temporalToTimeRecord(local), unit);
+      const timeText = formatTime(timeRecord, unit);
       this.#timeSpan.textContent = timeText;
       this.#suffixSpan.textContent = rawZone;
 
-      // datetime attribute mirrors what's rendered: the date in the active
-      // format, time truncated to `smallest-unit`, and the military zone
-      // letter ("Z" for UTC, single letter for the others). Full-precision
-      // offset form would contradict the visible text.
-      const pd = local.toPlainDate();
       const dateText =
          this.format === "date"
-            ? formatCalendarDate({
-                 year: pd.year,
-                 month: pd.month,
-                 day: pd.day,
-              })
-            : formatOrdinalDate({
-                 year: pd.year,
-                 dayOfYear: pd.dayOfYear,
-              });
+            ? formatCalendarDate({ year: pd.year, month: pd.month, day: pd.day })
+            : formatOrdinalDate({ year: pd.year, dayOfYear: pd.dayOfYear });
 
       if (!this.hideDate) {
          this.#dateSpan.textContent = this.hideYear
