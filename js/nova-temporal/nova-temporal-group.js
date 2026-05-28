@@ -86,6 +86,7 @@ const DEFAULT_OUTPUT_FORMAT = {
  */
 
 const TYPE_FAMILY = {
+   Instant: "datetime",
    PlainDateTime: "datetime",
    PlainDate: "date",
    PlainTime: "time",
@@ -890,10 +891,13 @@ export class NovaTemporalGroup extends HTMLElement {
     * @returns {Temporal.Duration}
     */
    #computeRangeDuration(first, last) {
-      // largestUnit explicit: PlainTime can't balance into days; everything
-      // else is balanced to days (calendar-unit balancing requires relativeTo
-      // and is anchor-sensitive — keep it day-and-below).
-      const largestUnit = first instanceof Temporal.PlainTime ? "hour" : "day";
+      // largestUnit explicit: PlainTime and Instant can't balance into days;
+      // everything else is balanced to days (calendar-unit balancing requires
+      // relativeTo and is anchor-sensitive — keep it day-and-below).
+      const largestUnit =
+         first instanceof Temporal.PlainTime || first instanceof Temporal.Instant
+            ? "hour"
+            : "day";
       return first.until(last, { largestUnit });
    }
 
@@ -910,11 +914,11 @@ export class NovaTemporalGroup extends HTMLElement {
    #applyDurations(anchor) {
       try {
          let result = anchor;
-         // Duration.add doesn't accept overflow; PlainDate/Time/DateTime do.
+         // Duration.add and Instant.add don't accept overflow; PlainDate/Time/DateTime do.
          // Reject impossible additions (Jan 31 + P1M) instead of silently
          // clamping to Feb 28/29 — matches the package's strict-validity stance.
          const addOpts =
-            anchor instanceof Temporal.Duration
+            anchor instanceof Temporal.Duration || anchor instanceof Temporal.Instant
                ? undefined
                : { overflow: "reject" };
          for (const slotName of this.#durationSlots) {

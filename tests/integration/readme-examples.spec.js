@@ -39,15 +39,15 @@ test('Interface Contract: .value and .temporal accessors', async ({ page }) => {
     }
 
     const initialValue = el.value;
-    const initialIsPDT = el.temporal instanceof Temporal.PlainDateTime;
+    const initialIsInstant = el.temporal instanceof Temporal.Instant;
 
-    el.temporal = Temporal.PlainDateTime.from('2026-02-09T16:00:00');
+    el.temporal = Temporal.Instant.from('2026-02-09T16:00:00Z');
     const afterSetValue = el.value;
 
-    return { initialValue, initialIsPDT, afterSetValue };
+    return { initialValue, initialIsInstant, afterSetValue };
   });
   expect(r.initialValue).toBe('2026-02-09T14:30:00Z');
-  expect(r.initialIsPDT).toBe(true);
+  expect(r.initialIsInstant).toBe(true);
   expect(r.afterSetValue).toBe('2026-02-09T16:00:00Z');
 });
 

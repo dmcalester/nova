@@ -8,7 +8,6 @@ const cases = [
   { input: '2026-02-09T14:30:00Z',                 expected: '2026-02-09T14:30:00Z', label: 'Z form' },
   { input: '2026-02-09T14:30:00-05:00',            expected: '2026-02-09T19:30:00Z', label: 'negative offset' },
   { input: '2026-02-09T14:30:00+00:00[UTC]',       expected: '2026-02-09T14:30:00Z', label: '[UTC] annotation' },
-  { input: '2026-02-09T14:30:00',                  expected: '2026-02-09T14:30:00Z', label: 'unzoned (UTC by convention)' },
 ];
 
 for (const { input, expected, label } of cases) {
@@ -22,6 +21,20 @@ for (const { input, expected, label } of cases) {
     expect(v).toBe(expected);
   });
 }
+
+test('nova-datetime input contract: unzoned string throws RangeError', async ({ page }) => {
+  const threw = await page.evaluate(() => {
+    const el = document.createElement('nova-datetime');
+    document.body.appendChild(el);
+    try {
+      el.value = '2026-02-09T14:30:00';
+      return false;
+    } catch (e) {
+      return e instanceof RangeError;
+    }
+  });
+  expect(threw).toBe(true);
+});
 
 test('nova-datetime ordinal: input ordinal form preserved (calendar-mode component)', async ({ page }) => {
   const v = await page.evaluate(() => {

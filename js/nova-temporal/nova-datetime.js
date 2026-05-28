@@ -28,7 +28,6 @@ import {
    parseAnyDate,
    parseAnyDatetime,
    instantToZonedRecord,
-   temporalToTimeRecord,
    exceedsTimeSmallestUnit,
 } from "./nova-temporal.js";
 import {
@@ -87,7 +86,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
    #dateSegmentCount = 0;
 
    static get temporalType() {
-      return "PlainDateTime";
+      return "Instant";
    }
 
    static get observedAttributes() {
@@ -242,14 +241,19 @@ export class NovaDatetime extends NovaTemporalInputBase {
       if (!str) return;
       const s = str.trim();
 
-      // Flexible path: try Instant-first parsing so offset and [zone] forms
-      // normalize to UTC. Strict path keeps native-only parsing.
+      // Flexible path: Instant-first parsing normalizes offset and [zone] forms
+      // to UTC. Unzoned strings are rejected — nova-datetime is Instant-canonical
+      // and requires an explicit UTC offset or Z suffix.
+      // Strict path keeps native-only parsing.
       if (!strict) {
          const inst = parseAnyDatetime(s);
          if (inst) {
             this.#applyParsedDatetime(instantToZonedRecord(inst, "UTC"), s);
             return;
          }
+         throw new RangeError(
+            `nova-datetime.value: cannot parse "${str}" — expected an ISO 8601 datetime with a UTC offset (e.g. "…Z" or "…+00:00")`,
+         );
       }
 
       const tIdx = s.indexOf("T");
@@ -262,18 +266,11 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const datePart = s.slice(0, tIdx);
       const timePart = s.slice(tIdx + 1);
 
-      // Parse date
-      let parsedDate;
-      let dateLabel;
-      if (strict) {
-         parsedDate = this.#isOrdinal
-            ? parseOrdinalDate(datePart)
-            : parseCalendarDate(datePart);
-         dateLabel = this.#isOrdinal ? "ordinal date" : "calendar date";
-      } else {
-         parsedDate = parseAnyDate(datePart);
-         dateLabel = "date";
-      }
+      // Strict path: native-only parsing for the current format.
+      const parsedDate = this.#isOrdinal
+         ? parseOrdinalDate(datePart)
+         : parseCalendarDate(datePart);
+      const dateLabel = this.#isOrdinal ? "ordinal date" : "calendar date";
       if (!parsedDate) {
          throw new RangeError(
             `nova-datetime.value: cannot parse "${datePart}" as ${dateLabel}`,
@@ -288,12 +285,9 @@ export class NovaDatetime extends NovaTemporalInputBase {
          );
       }
       if (exceedsTimeSmallestUnit(t, this.#smallestUnit)) {
-         if (strict) {
-            throw new RangeError(
-               `nova-datetime.value: input precision exceeds smallest-unit="${this.#smallestUnit}"`,
-            );
-         }
-         this.#emitPrecisionTruncated(str, t);
+         throw new RangeError(
+            `nova-datetime.value: input precision exceeds smallest-unit="${this.#smallestUnit}"`,
+         );
       }
 
       const timeValues = timeToSegmentValues(t, this.#smallestUnit);
@@ -387,21 +381,19 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
    // ── Interface contract ─────────────────────────────────────────────────────
 
-   /** @returns {Temporal.PlainDateTime|null} */
+   /** @returns {Temporal.Instant|null} */
    _toTemporal() {
-      const inst = parseAnyDatetime(this.formattedValue);
-      if (!inst) return null;
-      const { date, time } = instantToZonedRecord(inst, "UTC");
-      return date.toPlainDateTime(Temporal.PlainTime.from(time));
+      return parseAnyDatetime(this.formattedValue);
    }
 
    /**
-    * @param {Temporal.PlainDateTime} t
+    * @param {Temporal.Instant} t
     * @returns {string}
     */
    _formatTemporal(t) {
-      const datePart = this.#formatDateFrom(t);
-      const timePart = formatTime(temporalToTimeRecord(t), this.#smallestUnit);
+      const { date: pd, time: timeRecord } = instantToZonedRecord(t, "UTC");
+      const datePart = this.#formatDateFrom(pd);
+      const timePart = formatTime(timeRecord, this.#smallestUnit);
       return `${datePart}T${timePart}Z`;
    }
 

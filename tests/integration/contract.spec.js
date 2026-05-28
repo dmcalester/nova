@@ -24,7 +24,7 @@ test('nova-datetime.temporal = PlainDate throws TypeError', async ({ page }) => 
   });
   expect(r.threw).toBe(true);
   expect(r.name).toBe('TypeError');
-  expect(r.msg).toMatch(/PlainDateTime/);
+  expect(r.msg).toMatch(/Instant/);
 });
 
 test('nova-date.temporal = PlainTime throws TypeError', async ({ page }) => {
@@ -110,12 +110,12 @@ test('nova-ordinal-date.temporal = PlainDate in day-only mode throws TypeError',
 
 // ── Setter accepts the correct type ─────────────────────────────────────────
 
-test('nova-datetime.temporal = PlainDateTime sets the value', async ({ page }) => {
+test('nova-datetime.temporal = Instant sets the value', async ({ page }) => {
   await page.goto(FIXTURES['nova-datetime']);
   const v = await page.evaluate(() => {
     const el = document.createElement('nova-datetime');
     document.body.appendChild(el);
-    el.temporal = Temporal.PlainDateTime.from('2026-02-09T14:30:00');
+    el.temporal = Temporal.Instant.from('2026-02-09T14:30:00Z');
     return el.value;
   });
   expect(v).toBe('2026-02-09T14:30:00Z');

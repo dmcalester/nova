@@ -135,3 +135,63 @@ test('value below min sets rangeUnderflow', async ({ page }) => {
   }));
   expect(v.rangeUnderflow).toBe(true);
 });
+
+test('nova-datetime: temporal getter returns Temporal.Instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const isInstant = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    return el.temporal instanceof Temporal.Instant;
+  });
+  expect(isInstant).toBe(true);
+});
+
+test('nova-datetime: temporal setter accepts Temporal.Instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    el.temporal = Temporal.Instant.from('2026-02-09T14:30:00Z');
+    return el.value;
+  });
+  expect(value).toBe('2026-02-09T14:30:00Z');
+});
+
+test('nova-datetime: temporalType is "Instant"', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const type = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').temporalType;
+  });
+  expect(type).toBe('Instant');
+});
+
+test('nova-datetime: temporal setter rejects PlainDateTime with TypeError', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const msg = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    try {
+      el.temporal = Temporal.PlainDateTime.from('2026-02-09T14:30:00');
+      return null;
+    } catch (e) {
+      return e.message;
+    }
+  });
+  expect(msg).toMatch(/Instant/);
+});
+
+test('nova-datetime: setting value with unzoned string throws', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const threw = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    try {
+      el.value = '2026-02-09T14:30:00';
+      return false;
+    } catch (e) {
+      return e instanceof RangeError;
+    }
+  });
+  expect(threw).toBe(true);
+});
