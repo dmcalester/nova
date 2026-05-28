@@ -475,6 +475,29 @@ export function parseZone(str) {
    return `${m[1]}${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
+/**
+ * Project an Instant into a fixed-offset zone and return its wall-clock
+ * fields as a date + time record pair. Used by Instant-canonical components
+ * (nova-datetime, nova-clock) for segment rendering.
+ *
+ * @param {Temporal.Instant} instant
+ * @param {string} zoneId  Temporal-valid zone identifier (output of parseZone)
+ * @returns {{date: CalendarDateRecord & OrdinalDateRecord, time: TimeRecord}}
+ */
+export function instantToZonedRecord(instant, zoneId) {
+   const zdt = instant.toZonedDateTimeISO(zoneId);
+   const plainDate = zdt.toPlainDate();
+   return {
+      date: {
+         year: plainDate.year,
+         month: plainDate.month,
+         day: plainDate.day,
+         dayOfYear: plainDate.dayOfYear,
+      },
+      time: temporalToTimeRecord(zdt),
+   };
+}
+
 // ── Flexible parsing helpers ──────────────────────────────────────────────────
 
 /**
