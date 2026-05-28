@@ -912,6 +912,26 @@ export class NovaTemporalGroup extends HTMLElement {
     */
    #applyDurations(anchor) {
       try {
+         // Calendar-unit guard for Instant t0: years/months/days have no
+         // well-defined meaning on an Instant. Force PT-form durations.
+         if (anchor instanceof Temporal.Instant) {
+            for (const slotName of this.#durationSlots) {
+               const dEl = this.#slots.get(slotName);
+               if (!dEl) continue;
+               const dur = dEl.temporal;
+               if (!dur) continue;
+               if (dur.years || dur.months || dur.days) {
+                  const msg =
+                     "Calendar-unit durations (years, months, days) cannot be applied to an Instant. Use PT-form (hours/minutes/seconds) instead.";
+                  this.#lastComputeError = new RangeError(msg);
+                  reportNovaError(this, "compute-error", msg, {
+                     duration: dur.toString(),
+                  });
+                  return null;
+               }
+            }
+         }
+
          let result = anchor;
          // Duration.add and Instant.add don't accept overflow; PlainDate/Time/DateTime do.
          // Reject impossible additions (Jan 31 + P1M) instead of silently
@@ -1160,14 +1180,35 @@ export class NovaTemporalGroup extends HTMLElement {
 
    /**
     * Compute mode: a duration with components the t0 anchor cannot absorb
-    * (day-or-larger against PlainTime; sub-day against PlainDate) would
-    * otherwise be silently truncated by Temporal. Surface as customError
-    * instead of letting the user see a wrong-but-plausible computed value.
+    * (day-or-larger against PlainTime; sub-day against PlainDate; calendar
+    * units against Instant) would otherwise be silently truncated by Temporal
+    * or throw. Surface as customError instead of letting the user see a
+    * wrong-but-plausible computed value.
     */
    #validateDurationCompatibility() {
       if (this.#inferredMode === "range") return { valid: true };
       const t0 = this.#slots.get("t0");
       if (!t0 || !t0.temporal) return { valid: true };
+
+      // Instant anchor: calendar units (years/months/days) are not well-defined.
+      if (t0.temporal instanceof Temporal.Instant) {
+         for (const slotName of this.#durationSlots) {
+            const dEl = this.#slots.get(slotName);
+            if (!dEl) continue;
+            const dur = dEl.temporal;
+            if (!dur) continue;
+            if (dur.years || dur.months || dur.days) {
+               return {
+                  valid: false,
+                  flags: { customError: true },
+                  message:
+                     "Calendar-unit durations (years, months, days) cannot be applied to an Instant anchor. Use PT-form (hours/minutes/seconds) instead.",
+               };
+            }
+         }
+         return { valid: true };
+      }
+
       if (this.#durationsCompatibleWithAnchor(t0.temporal)) {
          return { valid: true };
       }

@@ -1010,3 +1010,92 @@ test.describe('output-format', () => {
     expect(err).toBeTruthy();
   });
 });
+
+// ── Instant t0 calendar-unit guard ──────────────────────────────────────────
+
+test('group: compute mode rejects P1D duration on Instant t0', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+  const result = await page.evaluate(async () => {
+    return new Promise((resolve) => {
+      document.addEventListener('nova-error', (e) => {
+        if (e.detail.code === 'compute-error') {
+          const code = e.detail.code;
+          // Defer validity read: setValidity runs after #computeOutputValue
+          // returns (later in the same rAF callback), so we need a microtask.
+          Promise.resolve().then(() => {
+            const g = document.querySelector('nova-temporal-group');
+            resolve({
+              code,
+              invalid: g.validity.customError === true,
+            });
+          });
+        }
+      }, { once: true });
+      document.body.innerHTML = `
+        <nova-temporal-group>
+          <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
+          <nova-duration slot="d0" value="P1D"></nova-duration>
+        </nova-temporal-group>`;
+    });
+  });
+  expect(result.code).toBe('compute-error');
+  expect(result.invalid).toBe(true);
+});
+
+test('group: compute mode accepts PT24H duration on Instant t0', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+  const computed = await page.evaluate(() => {
+    document.body.innerHTML = `
+      <nova-temporal-group>
+        <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
+        <nova-duration slot="d0" value="PT24H"></nova-duration>
+        <output slot="output"><span class="output-value"></span></output>
+      </nova-temporal-group>`;
+    return new Promise((resolve) =>
+      requestAnimationFrame(() => {
+        const g = document.querySelector('nova-temporal-group');
+        resolve({
+          formatted: g.formattedValue,
+          invalid: g.validity.customError === true,
+        });
+      })
+    );
+  });
+  expect(computed.formatted).toBe('2026-02-10T14:30:00Z');
+  expect(computed.invalid).toBe(false);
+});
+
+test('group: compute mode rejects P1Y on Instant t0', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+  const code = await page.evaluate(async () => {
+    return new Promise((resolve) => {
+      document.addEventListener('nova-error', (e) => {
+        if (e.detail.code === 'compute-error') resolve(e.detail.code);
+      }, { once: true });
+      document.body.innerHTML = `
+        <nova-temporal-group>
+          <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
+          <nova-duration slot="d0" value="P1Y"></nova-duration>
+        </nova-temporal-group>`;
+    });
+  });
+  expect(code).toBe('compute-error');
+});
+
+test('group: range mode between two nova-datetime returns Duration', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-temporal-group-range.html');
+  const dur = await page.evaluate(() => {
+    document.body.innerHTML = `
+      <nova-temporal-group>
+        <nova-datetime slot="t0" value="2026-02-09T14:00:00Z"></nova-datetime>
+        <nova-datetime slot="t1" value="2026-02-09T15:30:00Z"></nova-datetime>
+        <output slot="output"><span class="output-value"></span></output>
+      </nova-temporal-group>`;
+    return new Promise((resolve) =>
+      requestAnimationFrame(() => {
+        resolve(document.querySelector('nova-temporal-group').formattedValue);
+      })
+    );
+  });
+  expect(dur).toBe('PT1H30M');
+});
