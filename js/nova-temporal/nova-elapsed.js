@@ -51,7 +51,7 @@
  */
 
 import { createNovaStyleSheets } from "../nova-stylesheets.js";
-import { parseAnyDatetime, parseDuration, nowUTC } from "./nova-temporal.js";
+import { parseAnyDatetime, parseDuration } from "./nova-temporal.js";
 import { reportNovaError } from "./nova-temporal-errors.js";
 
 const elapsedSheet = new CSSStyleSheet();
@@ -282,8 +282,8 @@ export class NovaElapsed extends HTMLElement {
       }
 
       const epochRaw = this.epoch;
-      const parsed = epochRaw == null ? null : parseAnyDatetime(epochRaw);
-      if (!parsed) {
+      const epochInstant = epochRaw == null ? null : parseAnyDatetime(epochRaw);
+      if (!epochInstant) {
          this.#reportOnce(
             "invalid-epoch",
             `Cannot parse epoch "${epochRaw}" as ISO-8601 datetime`,
@@ -304,14 +304,16 @@ export class NovaElapsed extends HTMLElement {
       }
 
       try {
-         const epochPDT = parsed.date.toPlainDateTime(
-            Temporal.PlainTime.from(parsed.time),
-         );
          // Exact (nanosecond) elapsed drives the threshold comparison; the
          // displayed value is a separate, window-rounded copy. Comparing a
          // rounded value would make a sub-threshold count register as
          // "crossed" the moment it truncates down onto the threshold.
-         const exact = epochPDT.until(nowUTC(), {
+         // Use ZonedDateTime for the until() call because Instant.until()
+         // does not support calendar units (e.g. "day"); UTC ZDT preserves
+         // the same UTC-day semantics as the previous PlainDateTime approach.
+         const epochZDT = epochInstant.toZonedDateTimeISO("UTC");
+         const nowZDT = Temporal.Now.instant().toZonedDateTimeISO("UTC");
+         const exact = epochZDT.until(nowZDT, {
             largestUnit: this.largestUnit,
          });
          const threshold = Temporal.Duration.from(thresholdRecord);

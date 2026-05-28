@@ -28,6 +28,7 @@ import {
    nowUTC,
    parseAnyDate,
    parseAnyDatetime,
+   instantToZonedRecord,
    temporalToTimeRecord,
    exceedsTimeSmallestUnit,
 } from "./nova-temporal.js";
@@ -245,9 +246,9 @@ export class NovaDatetime extends NovaTemporalInputBase {
       // Flexible path: try Instant-first parsing so offset and [zone] forms
       // normalize to UTC. Strict path keeps native-only parsing.
       if (!strict) {
-         const parsed = parseAnyDatetime(s);
-         if (parsed) {
-            this.#applyParsedDatetime(parsed, s);
+         const inst = parseAnyDatetime(s);
+         if (inst) {
+            this.#applyParsedDatetime(instantToZonedRecord(inst, "UTC"), s);
             return;
          }
       }
@@ -335,9 +336,9 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const s = str.trim();
 
       // Full datetime
-      const parsed = parseAnyDatetime(s);
-      if (parsed) {
-         this.#applyParsedDatetime(parsed, s);
+      const inst = parseAnyDatetime(s);
+      if (inst) {
+         this.#applyParsedDatetime(instantToZonedRecord(inst, "UTC"), s);
          return;
       }
 
@@ -379,21 +380,20 @@ export class NovaDatetime extends NovaTemporalInputBase {
    }
 
    _compareValues(a, b) {
-      const pa = parseAnyDatetime(a);
-      const pb = parseAnyDatetime(b);
-      if (!pa || !pb) return null;
-      const dateCmp = Temporal.PlainDate.compare(pa.date, pb.date);
-      if (dateCmp !== 0) return dateCmp;
-      return Temporal.PlainTime.compare(pa.time, pb.time);
+      const ia = parseAnyDatetime(a);
+      const ib = parseAnyDatetime(b);
+      if (!ia || !ib) return null;
+      return Temporal.Instant.compare(ia, ib);
    }
 
    // ── Interface contract ─────────────────────────────────────────────────────
 
    /** @returns {Temporal.PlainDateTime|null} */
    _toTemporal() {
-      const parsed = parseAnyDatetime(this.formattedValue);
-      if (!parsed) return null;
-      return parsed.date.toPlainDateTime(parsed.time);
+      const inst = parseAnyDatetime(this.formattedValue);
+      if (!inst) return null;
+      const { date, time } = instantToZonedRecord(inst, "UTC");
+      return date.toPlainDateTime(Temporal.PlainTime.from(time));
    }
 
    /**

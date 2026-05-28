@@ -8,8 +8,6 @@
  * Nanosecond precision throughout.
  */
 
-import { reportNovaError } from "./nova-temporal-errors.js";
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
@@ -516,60 +514,46 @@ export function parseAnyDate(str) {
 }
 
 /**
- * Parse a datetime string in any well-formed ISO 8601 form and normalize to UTC.
+ * Parse an ISO 8601 datetime string into a `Temporal.Instant`.
  *
- * Accepts:
- *  - Zoned: `2026-02-09T14:30:00Z`, `2026-02-09T14:30:00-05:00`, `2026-02-09T14:30:00+00:00[UTC]`
- *  - Unzoned: `2026-02-09T14:30:00` (treated as UTC by convention)
- *  - Ordinal: `2026-040T14:30:00Z` and unzoned ordinal forms
+ * Accepted forms:
+ *   - Z form:              "2026-02-09T14:30:00Z"
+ *   - Numeric offset:      "2026-02-09T14:30:00-05:00"
+ *   - Bracketed offset:    "2026-02-09T14:30:00+00:00[UTC]"
+ *   - Ordinal Z form:      "2026-040T14:30:00Z"
+ *   - Ordinal w/ offset:   "2026-040T14:30:00-05:00"
+ *
+ * Unzoned input ("2026-02-09T14:30:00", no Z or offset) returns `null` —
+ * the library is fixed-offset-only and does not infer a zone.
  *
  * @param {string} str
- * @returns {{date: Temporal.PlainDate, time: TimeRecord}|null} null on parse failure
+ * @returns {Temporal.Instant|null}
  */
 export function parseAnyDatetime(str) {
    if (!str) return null;
 
-   // Offset-bearing calendar-date strings (Z, ±HH:MM, [zone]) route through
-   // Instant.from for native UTC normalization. Ordinal-date forms
-   // (YYYY-DDDT…) are not understood by Instant.from and always go through
-   // the T-split path. Non-offset strings go straight to T-split. Real
-   // Instant errors on offset-bearing calendar input surface here rather
-   // than silently routing through the fallback parser.
    const isOrdinal = /^\d{4}-\d{3}T/.test(str);
-   const hasOffsetOrZone = /[Zz]$|[+-]\d\d:?\d\d(?:\b|\[)|\[[^\]]+\]$/.test(str);
-
-   if (!isOrdinal && hasOffsetOrZone) {
+   if (isOrdinal) {
+      // Native Temporal.Instant.from doesn't understand YYYY-DDD; convert
+      // the ordinal prefix to calendar form and splice back into the
+      // original string, leaving the offset/zone suffix intact.
+      const tIdx = str.indexOf("T");
+      const prefix = str.slice(0, tIdx);
+      const suffix = str.slice(tIdx);
+      const pd = parseAnyDate(prefix);
+      if (!pd) return null;
       try {
-         const inst = Temporal.Instant.from(str);
-         const pdt = inst.toZonedDateTimeISO("UTC").toPlainDateTime();
-         return {
-            date: pdt.toPlainDate(),
-            time: temporalToTimeRecord(pdt),
-         };
-      } catch (e) {
-         reportNovaError(
-            null,
-            "datetime-parse-error",
-            `Failed to parse offset-bearing datetime "${str}"`,
-            { input: str, error: e },
-         );
+         return Temporal.Instant.from(`${pd.toString()}${suffix}`);
+      } catch {
          return null;
       }
    }
 
-   const tIdx = str.indexOf("T");
-   if (tIdx < 0) return null;
-
-   const datePart = str.slice(0, tIdx);
-   const timePart = str.slice(tIdx + 1);
-
-   const date = parseAnyDate(datePart);
-   if (!date) return null;
-
-   const time = parseTime(timePart);
-   if (!time) return null;
-
-   return { date, time };
+   try {
+      return Temporal.Instant.from(str);
+   } catch {
+      return null;
+   }
 }
 
 /**
@@ -594,8 +578,8 @@ export function parseTimeFlexible(str) {
  * `reportNovaError`.
  *
  * @param {string} str
- * @param {"PlainDateTime"|"PlainDate"|"PlainTime"|"Duration"} temporalType
- * @returns {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration}
+ * @param {"Instant"|"PlainDate"|"PlainTime"|"Duration"} temporalType
+ * @returns {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration}
  * @throws {RangeError}
  */
 export function parseConstraintByType(str, temporalType) {
@@ -605,10 +589,10 @@ export function parseConstraintByType(str, temporalType) {
       );
    };
    switch (temporalType) {
-      case "PlainDateTime": {
-         const parsed = parseAnyDatetime(str);
-         if (!parsed) fail();
-         return parsed.date.toPlainDateTime(parsed.time);
+      case "Instant": {
+         const inst = parseAnyDatetime(str);
+         if (!inst) fail();
+         return inst;
       }
       case "PlainDate": {
          const pd = parseAnyDate(str);

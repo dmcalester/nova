@@ -118,21 +118,78 @@ test('parseAnyDate: accepts ordinal format', async ({ page }) => {
   expect(r).toBe('2026-04-09');
 });
 
-test('parseAnyDatetime: parses calendar datetime', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const result = window.parseAnyDatetime('2026-04-09T14:30:00Z');
-    return result ? { dateStr: result.date.toString(), time: result.time } : null;
+// ── parseAnyDatetime returns Temporal.Instant ────────────────────────────
+
+test('parseAnyDatetime: Z form returns Instant', async ({ page }) => {
+  const ok = await page.evaluate(() => {
+    const a = window.parseAnyDatetime('2026-02-09T14:30:00Z');
+    const b = Temporal.Instant.from('2026-02-09T14:30:00Z');
+    return a != null && a.equals(b);
   });
-  expect(r.dateStr).toBe('2026-04-09');
-  expect(r.time).toMatchObject({ hour: 14, minute: 30 });
+  expect(ok).toBe(true);
 });
 
-test('parseAnyDatetime: parses ordinal datetime', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const result = window.parseAnyDatetime('2026-099T14:30:00Z');
-    return result ? result.date.toString() : null;
+test('parseAnyDatetime: negative offset normalizes', async ({ page }) => {
+  const ok = await page.evaluate(() => {
+    const a = window.parseAnyDatetime('2026-02-09T14:30:00-05:00');
+    const b = Temporal.Instant.from('2026-02-09T19:30:00Z');
+    return a.equals(b);
   });
-  expect(r).toBe('2026-04-09');
+  expect(ok).toBe(true);
+});
+
+test('parseAnyDatetime: bracketed [UTC] form accepted', async ({ page }) => {
+  const ok = await page.evaluate(() => {
+    const a = window.parseAnyDatetime('2026-02-09T14:30:00+00:00[UTC]');
+    const b = Temporal.Instant.from('2026-02-09T14:30:00Z');
+    return a.equals(b);
+  });
+  expect(ok).toBe(true);
+});
+
+test('parseAnyDatetime: ordinal-with-Z accepted via fallback', async ({ page }) => {
+  const ok = await page.evaluate(() => {
+    const a = window.parseAnyDatetime('2026-040T14:30:00Z');
+    const b = Temporal.Instant.from('2026-02-09T14:30:00Z');
+    return a.equals(b);
+  });
+  expect(ok).toBe(true);
+});
+
+test('parseAnyDatetime: ordinal-with-offset accepted via fallback', async ({ page }) => {
+  const ok = await page.evaluate(() => {
+    const a = window.parseAnyDatetime('2026-040T14:30:00-05:00');
+    const b = Temporal.Instant.from('2026-02-09T19:30:00Z');
+    return a.equals(b);
+  });
+  expect(ok).toBe(true);
+});
+
+test('parseAnyDatetime: unzoned string returns null', async ({ page }) => {
+  const r = await page.evaluate(() => window.parseAnyDatetime('2026-02-09T14:30:00'));
+  expect(r).toBe(null);
+});
+
+test('parseAnyDatetime: garbage returns null', async ({ page }) => {
+  const r = await page.evaluate(() => window.parseAnyDatetime('not a datetime'));
+  expect(r).toBe(null);
+});
+
+test('parseAnyDatetime: missing T returns null', async ({ page }) => {
+  const r = await page.evaluate(() => window.parseAnyDatetime('2026-02-09'));
+  expect(r).toBe(null);
+});
+
+test('parseAnyDatetime: no longer fires datetime-parse-error', async ({ page }) => {
+  const events = await page.evaluate(() => {
+    const seen = [];
+    const handler = (e) => seen.push(e.detail.code);
+    document.addEventListener('nova-error', handler);
+    window.parseAnyDatetime('definitely not iso');
+    document.removeEventListener('nova-error', handler);
+    return seen;
+  });
+  expect(events).not.toContain('datetime-parse-error');
 });
 
 test('parseTimeFlexible: extracts time from datetime string', async ({ page }) => {
@@ -182,65 +239,3 @@ test('parseDuration: still accepts pure clock ("PT1H30M")', async ({ page }) => 
   expect(r).toEqual(expect.objectContaining({ hours: 1, minutes: 30 }));
 });
 
-// ── parseAnyDatetime: Instant-first normalization ───────────────────────────
-
-test('parseAnyDatetime: Z form preserves UTC value', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const p = window.parseAnyDatetime('2026-02-09T14:30:00Z');
-    return { hour: p.time.hour, minute: p.time.minute, day: p.date.day };
-  });
-  expect(r).toEqual({ hour: 14, minute: 30, day: 9 });
-});
-
-test('parseAnyDatetime: negative offset normalizes to UTC', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const p = window.parseAnyDatetime('2026-02-09T14:30:00-05:00');
-    return { hour: p.time.hour, minute: p.time.minute, day: p.date.day };
-  });
-  // 14:30 in -05:00 → 19:30 UTC, same calendar day
-  expect(r).toEqual({ hour: 19, minute: 30, day: 9 });
-});
-
-test('parseAnyDatetime: positive offset normalizes (rolls back a day at midnight)', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const p = window.parseAnyDatetime('2026-02-09T02:30:00+05:00');
-    return { hour: p.time.hour, minute: p.time.minute, day: p.date.day, month: p.date.month };
-  });
-  // 02:30 in +05:00 → 21:30 UTC the previous day
-  expect(r).toEqual({ hour: 21, minute: 30, day: 8, month: 2 });
-});
-
-test('parseAnyDatetime: [UTC] annotation strips and stays at given time', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const p = window.parseAnyDatetime('2026-02-09T14:30:00+00:00[UTC]');
-    return { hour: p.time.hour, minute: p.time.minute };
-  });
-  expect(r).toEqual({ hour: 14, minute: 30 });
-});
-
-test('parseAnyDatetime: unzoned datetime treated as UTC by convention', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const p = window.parseAnyDatetime('2026-02-09T14:30:00');
-    return { hour: p.time.hour, minute: p.time.minute, day: p.date.day };
-  });
-  expect(r).toEqual({ hour: 14, minute: 30, day: 9 });
-});
-
-test('parseAnyDatetime: ordinal date form still works', async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const p = window.parseAnyDatetime('2026-040T14:30:00Z');
-    return { hour: p.time.hour, day: p.date.day, month: p.date.month };
-  });
-  // 2026-040 is Feb 9
-  expect(r).toEqual({ hour: 14, day: 9, month: 2 });
-});
-
-test('parseAnyDatetime: garbage returns null', async ({ page }) => {
-  const r = await page.evaluate(() => window.parseAnyDatetime('not a datetime'));
-  expect(r).toBeNull();
-});
-
-test('parseAnyDatetime: missing T separator returns null', async ({ page }) => {
-  const r = await page.evaluate(() => window.parseAnyDatetime('2026-02-09'));
-  expect(r).toBeNull();
-});
