@@ -391,17 +391,6 @@ export function formatDurationHuman(d) {
    }
 }
 
-// ── Now (UTC) ────────────────────────────────────────────────────────────────
-/**
- * Current wall-clock time in UTC. The library is UTC-only by design — the
- * backend (Python/telemetry) is the source of truth and stores everything
- * as UTC, so widgets read and write UTC without offset conversion.
- *
- * @returns {Temporal.PlainDateTime}
- */
-export function nowUTC() {
-   return Temporal.Now.plainDateTimeISO("UTC");
-}
 
 // ── Military (NATO single-letter) time zones ─────────────────────────────────
 // Fixed UTC offsets only. J ("Juliet") is intentionally excluded — it denotes

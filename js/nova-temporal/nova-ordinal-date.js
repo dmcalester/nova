@@ -18,7 +18,6 @@ import { NovaTemporalInputBase } from "./nova-temporal-input-base.js";
 import {
    parseOrdinalDate,
    formatOrdinalDate,
-   nowUTC,
    parseAnyDate,
    ordinalDateToPlainDate,
 } from "./nova-temporal.js";
@@ -195,12 +194,11 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
    }
 
    _setToNow() {
-      const now = nowUTC();
-      const pd = now.toPlainDate();
+      const now = Temporal.Now.plainDateISO("UTC");
       if (this.#hasYear) {
-         this.setAllSegmentValues([pd.year, pd.dayOfYear]);
+         this.setAllSegmentValues([now.year, now.dayOfYear]);
       } else {
-         this.setAllSegmentValues([pd.dayOfYear]);
+         this.setAllSegmentValues([now.dayOfYear]);
       }
    }
 

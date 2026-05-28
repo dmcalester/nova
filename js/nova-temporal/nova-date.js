@@ -13,7 +13,6 @@ import { NovaTemporalInputBase } from "./nova-temporal-input-base.js";
 import {
    parseCalendarDate,
    formatCalendarDate,
-   nowUTC,
    parseAnyDate,
 } from "./nova-temporal.js";
 import {
@@ -104,7 +103,7 @@ export class NovaDate extends NovaTemporalInputBase {
    }
 
    _setToNow() {
-      const now = nowUTC();
+      const now = Temporal.Now.plainDateISO("UTC");
       this.setAllSegmentValues([now.year, now.month, now.day]);
    }
 

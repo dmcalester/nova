@@ -15,7 +15,6 @@ import { NovaTemporalInputBase } from "./nova-temporal-input-base.js";
 import {
    parseTime,
    formatTime,
-   nowUTC,
    parseTimeFlexible,
    temporalToTimeRecord,
    exceedsTimeSmallestUnit,
@@ -163,7 +162,7 @@ export class NovaTime extends NovaTemporalInputBase {
    }
 
    _setToNow() {
-      const now = nowUTC();
+      const now = Temporal.Now.plainTimeISO("UTC");
       const time = temporalToTimeRecord(now);
       const values = this.activeDescriptors.map((d) => time[d.field] ?? 0);
       this.setAllSegmentValues(values);

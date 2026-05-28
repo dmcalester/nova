@@ -25,7 +25,6 @@ import {
    formatOrdinalDate,
    parseTime,
    formatTime,
-   nowUTC,
    parseAnyDate,
    parseAnyDatetime,
    instantToZonedRecord,
@@ -407,10 +406,9 @@ export class NovaDatetime extends NovaTemporalInputBase {
    }
 
    _setToNow() {
-      const now = nowUTC();
-      const pd = now.toPlainDate();
+      const inst = Temporal.Now.instant();
+      const { date: pd, time: timeRecord } = instantToZonedRecord(inst, "UTC");
       const dateValues = this.#dateValuesFrom(pd);
-      const timeRecord = temporalToTimeRecord(now);
       const timeValues = timeToSegmentValues(timeRecord, this.#smallestUnit);
       this.setAllSegmentValues([...dateValues, ...timeValues]);
    }
