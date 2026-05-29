@@ -10,6 +10,8 @@
  *   format        — "date" (YYYY-MM-DD, default) or "ordinal" (YYYY-DDD)
  *   smallest-unit — minute | second | millisecond | microsecond | nanosecond
  *   overflow      — "constrain" (default) | "reject"
+ *   zone          — military letter or numeric offset (default "Z")
+ *   value-format  — "z" (default) or "offset" — .value emission format
  *   name          — form field name
  *   disabled      — disables input
  *   readonly      — prevents editing
@@ -263,21 +265,6 @@ export class NovaDatetime extends NovaTemporalInputBase {
          return `${datePart}T${timePart}Z`;
       }
       return this._formatTemporal(t);
-   }
-
-   _rawFormattedValue() {
-      const year = String(this.getSegmentValueByName("year")).padStart(4, "0");
-      let datePart;
-      if (this.format === "ordinal") {
-         const doy = String(this.getSegmentValueByName("dayOfYear")).padStart(3, "0");
-         datePart = `${year}-${doy}`;
-      } else {
-         const month = String(this.getSegmentValueByName("month")).padStart(2, "0");
-         const day = String(this.getSegmentValueByName("day")).padStart(2, "0");
-         datePart = `${year}-${month}-${day}`;
-      }
-      const t = buildTimeRecordFromSegments((n) => this.getSegmentValueByName(n));
-      return `${datePart}T${formatTime(t, this.smallestUnit)}Z`;
    }
 
    #formatDate() {
