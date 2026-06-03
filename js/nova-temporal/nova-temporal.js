@@ -112,11 +112,6 @@ function recordToPlainDate(d) {
    return Temporal.PlainDate.from(d, { overflow: "reject" });
 }
 
-/** @param {DurationRecord} d @returns {Temporal.Duration} */
-function recordToDuration(d) {
-   return Temporal.Duration.from(d);
-}
-
 // (year, dayOfYear) → PlainDate. Temporal exposes the inverse (.dayOfYear)
 // but has no direct constructor from these two values. The `-1` offset is
 // because day-of-year 1 is Jan 1 itself, not Jan 1 + 1 day.
@@ -177,6 +172,10 @@ export function parseTime(str) {
    let s = str.trim();
    if (s.startsWith("T") || s.startsWith("t")) s = s.slice(1);
    if (s.endsWith("Z") || s.endsWith("z")) s = s.slice(0, -1);
+   // Reject a date-bearing string: PlainTime.from would otherwise leniently
+   // truncate a full datetime down to its time. A `YYYY-` run marks a date;
+   // a bare `±HH:MM` offset (which we still tolerate) never contains one.
+   if (/\d{4}-\d/.test(s)) return null;
    try {
       return temporalToTimeRecord(Temporal.PlainTime.from(s));
    } catch {
@@ -256,10 +255,16 @@ export function exceedsTimeSmallestUnit(timeRecord, smallestUnit) {
  * @param {string} str
  * @returns {CalendarDateRecord|null} null on parse failure (does not throw)
  */
+const CALENDAR_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 export function parseCalendarDate(str) {
    if (!str) return null;
+   const s = str.trim();
+   // Anchor the shape: PlainDate.from would otherwise leniently truncate a
+   // full datetime ("2026-02-09T14:30:00") down to its date.
+   if (!CALENDAR_DATE_REGEX.test(s)) return null;
    try {
-      return dateToRecord(Temporal.PlainDate.from(str.trim()));
+      return dateToRecord(Temporal.PlainDate.from(s));
    } catch {
       return null;
    }
@@ -273,17 +278,6 @@ export function parseCalendarDate(str) {
 export function formatCalendarDate(d) {
    if (!d) return "";
    return recordToPlainDate(d).toString();
-}
-
-/**
- * @param {number} year
- * @param {number} month  - 1-12
- * @param {number} day    - clamped to [1, daysInMonth]
- * @returns {number}
- */
-export function clampDay(year, month, day) {
-   const max = daysInMonth(year, month);
-   return Math.max(1, Math.min(day, max));
 }
 
 // ── Ordinal date parsing / formatting ────────────────────────────────────────
@@ -357,24 +351,6 @@ export function parseDuration(str) {
 }
 
 /**
- * @param {DurationRecord|null|undefined} d
- * @param {DurationSmallestUnit} [smallestUnit="second"]
- * @returns {string} ISO 8601 duration ("PT…") or "" if d is falsy
- */
-export function formatDuration(d, smallestUnit = "second") {
-   if (!d) return "";
-   const td = recordToDuration(d);
-   const unit = String(smallestUnit || "second").replace(/s$/, "");
-   const opts = {
-      second: undefined,
-      millisecond: { fractionalSecondDigits: 3 },
-      microsecond: { fractionalSecondDigits: 6 },
-      nanosecond: { fractionalSecondDigits: 9 },
-   };
-   return td.toString(opts[unit]);
-}
-
-/**
  * Render a duration as a canonical ISO-8601 string (e.g. "P1DT2H30M").
  * Used by the group's output slot and shared across the package as the single
  * formatted-duration boundary. An empty duration formats as "PT0S".
@@ -413,18 +389,6 @@ export function militaryZoneOffset(letter) {
    return Object.prototype.hasOwnProperty.call(MILITARY_ZONES, key)
       ? MILITARY_ZONES[key]
       : null;
-}
-
-/**
- * @param {number} hours integer offset in -12..12 (J/0 maps to Z).
- * @returns {string|null} single-letter military zone code, or null if no match.
- */
-export function militaryZoneLetter(hours) {
-   if (!Number.isInteger(hours)) return null;
-   for (const [letter, offset] of Object.entries(MILITARY_ZONES)) {
-      if (offset === hours) return letter;
-   }
-   return null;
 }
 
 const NUMERIC_OFFSET_REGEX = /^([+-])(\d{2}):(\d{2})$/;

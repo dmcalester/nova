@@ -120,32 +120,9 @@ export class NovaTime extends NovaTemporalInputBase {
                `nova-time.value: input precision exceeds smallest-unit="${this.#smallestUnit}"`,
             );
          }
-         this.#emitPrecisionTruncated(str, t);
+         this._emitPrecisionTruncated(str, t);
       }
       this.setAllSegmentValues(timeToSegmentValues(t, this.#smallestUnit), true);
-   }
-
-   /**
-    * Detail shape: `{ smallestUnit, input, parsedRecord }` — flat keys.
-    * Convention: fixed-schema events use flat keys; events with dynamic keys
-    * (e.g. per-slot data) nest them under a bag key like `slots`.
-    */
-   #emitPrecisionTruncated(input, parsedRecord) {
-      this.dispatchEvent(
-         new CustomEvent("precision-truncated", {
-            detail: { smallestUnit: this.#smallestUnit, input, parsedRecord },
-            bubbles: true,
-            composed: true,
-         }),
-      );
-   }
-
-   _parseStrictValue(str) {
-      try {
-         this.parseAndSet(str, true);
-      } catch {
-         // Paste failed — leave segments unchanged
-      }
    }
 
    /**
@@ -156,7 +133,7 @@ export class NovaTime extends NovaTemporalInputBase {
       const t = parseTimeFlexible(str);
       if (!t) throw new RangeError(`nova-time.value: cannot parse "${str}" as time`);
       if (exceedsTimeSmallestUnit(t, this.#smallestUnit)) {
-         this.#emitPrecisionTruncated(str, t);
+         this._emitPrecisionTruncated(str, t);
       }
       this.setAllSegmentValues(timeToSegmentValues(t, this.#smallestUnit), true);
    }
@@ -169,10 +146,7 @@ export class NovaTime extends NovaTemporalInputBase {
    }
 
    _compareValues(a, b) {
-      const ta = parseTime(a);
-      const tb = parseTime(b);
-      if (!ta || !tb) return null;
-      return Temporal.PlainTime.compare(ta, tb);
+      return this._compareParsed(a, b, parseTime, Temporal.PlainTime.compare);
    }
 
    // ── Interface contract ─────────────────────────────────────────────────────

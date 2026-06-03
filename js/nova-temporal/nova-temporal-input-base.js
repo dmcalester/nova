@@ -131,20 +131,75 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
    }
 
    /**
+    * Strict paste hook shared by every temporal input: parse in native-only
+    * mode (`parseAndSet(str, true)`) and swallow failures, since a paste must
+    * not throw. Overrides the no-op default in NovaSegmentInputBase.
+    *
+    * @param {string} str
+    */
+   _parseStrictValue(str) {
+      try {
+         this.parseAndSet(str, true);
+      } catch {
+         // Paste failed — leave segments unchanged
+      }
+   }
+
+   /**
+    * Compare two formatted values through a parser and a Temporal comparator,
+    * returning `null` when either fails to parse. Centralizes the
+    * parse → null-check → compare skeleton that the date/time/datetime inputs
+    * share; the base's min/max validation treats `null` as "incomparable".
+    *
+    * @param {string} a
+    * @param {string} b
+    * @param {(s: string) => unknown} parse maps a value string to a Temporal-ish operand
+    * @param {(x: unknown, y: unknown) => number} compare e.g. `Temporal.PlainDate.compare`
+    * @returns {number|null}
+    */
+   _compareParsed(a, b, parse, compare) {
+      const pa = parse(a);
+      const pb = parse(b);
+      if (!pa || !pb) return null;
+      return compare(pa, pb);
+   }
+
+   /**
+    * Dispatch the shared `precision-truncated` event. Detail uses flat keys
+    * `{ smallestUnit, input, parsedRecord }`. Only inputs that expose a
+    * `smallestUnit` getter (nova-time, nova-datetime) emit this.
+    *
+    * @param {string} input the original string that carried excess precision
+    * @param {object} parsedRecord the fully-parsed time record (pre-truncation)
+    */
+   _emitPrecisionTruncated(input, parsedRecord) {
+      this.dispatchEvent(
+         new CustomEvent("precision-truncated", {
+            detail: { smallestUnit: this.smallestUnit, input, parsedRecord },
+            bubbles: true,
+            composed: true,
+         }),
+      );
+   }
+
+   /**
     * Dispatch a `nova-error` event so the host app can decide what to show
     * (toast, alert, log, telemetry). Hosts that want the v1 alert behavior
     * can listen and call `alert()` themselves.
+    *
+    * The message is type-specific: a `range` paste parsed successfully but
+    * fell outside the field's min/max, so it must not be described as
+    * malformed.
     *
     * @param {'parse-error'|'range'} type
     * @param {string} text
     */
    _onPasteError(type, text) {
-      reportNovaError(
-         this,
-         `paste-${type}`,
-         `Pasted text is malformed: "${text}"`,
-         { text },
-      );
-      // user-invalid validity already holds from the failed parse
+      const message =
+         type === "range"
+            ? `Pasted value is out of range: "${text}"`
+            : `Pasted text is malformed: "${text}"`;
+      reportNovaError(this, `paste-${type}`, message, { text });
+      // user-invalid validity already holds from the failed parse / range check
    }
 }

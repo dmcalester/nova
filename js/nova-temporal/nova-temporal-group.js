@@ -747,18 +747,37 @@ export class NovaTemporalGroup extends HTMLElement {
       const endStr = lastSlot.formatTemporal(last);
       const durationStr = formatDurationHuman(duration);
 
+      // Range mode's default format is "duration".
+      return this.#assembleOutput(format, startStr, endStr, durationStr, durationStr);
+   }
+
+   /**
+    * Assemble an output string from the three building blocks for any of the
+    * five output formats. `fallback` is the result for the mode's default
+    * format — range mode defaults to the duration, compute mode to the end —
+    * which also covers an unrecognized format.
+    *
+    * @param {OutputFormat} format
+    * @param {string} startStr
+    * @param {string} endStr
+    * @param {string} durationStr
+    * @param {string} fallback
+    * @returns {string}
+    */
+   #assembleOutput(format, startStr, endStr, durationStr, fallback) {
       switch (format) {
          case "end":
             return endStr;
+         case "duration":
+            return durationStr;
          case "interval":
             return `${startStr}/${endStr}`;
          case "start-duration":
             return `${startStr}/${durationStr}`;
          case "duration-end":
             return `${durationStr}/${endStr}`;
-         case "duration":
          default:
-            return durationStr;
+            return fallback;
       }
    }
 
@@ -796,19 +815,8 @@ export class NovaTemporalGroup extends HTMLElement {
          durationStr = formatDurationHuman(sum);
       }
 
-      switch (format) {
-         case "duration":
-            return durationStr;
-         case "interval":
-            return `${startStr}/${endStr}`;
-         case "start-duration":
-            return `${startStr}/${durationStr}`;
-         case "duration-end":
-            return `${durationStr}/${endStr}`;
-         case "end":
-         default:
-            return endStr;
-      }
+      // Compute mode's default format is "end".
+      return this.#assembleOutput(format, startStr, endStr, durationStr, endStr);
    }
 
    /**

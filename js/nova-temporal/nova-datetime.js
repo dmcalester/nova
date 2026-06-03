@@ -200,37 +200,21 @@ export class NovaDatetime extends NovaTemporalInputBase {
          // Preserve canonical instant: re-project segments from old zone into new zone.
          // Guard: skip if not yet connected — connectedCallback handles initial projection.
          if (this.isConnected && !this.isEmpty) {
-            // Rebuild the instant using the OLD zone so the canonical UTC instant is
-            // preserved across zone changes.  _toTemporal() already reads the current
-            // zone attribute (which is now newVal), so we re-derive from oldVal here.
-            const oldZid = parseZone(oldVal || "Z") ?? "UTC";
-            let wall;
-            if (this.#isOrdinal) {
-               const pd = ordinalDateToPlainDate(
-                  this.getSegmentValueByName("year"),
-                  this.getSegmentValueByName("dayOfYear"),
-               );
-               wall = { year: pd.year, month: pd.month, day: pd.day };
-            } else {
-               wall = {
-                  year: this.getSegmentValueByName("year"),
-                  month: this.getSegmentValueByName("month"),
-                  day: this.getSegmentValueByName("day"),
-               };
-            }
-            const timeRecord = buildTimeRecordFromSegments(
-               (n) => this.getSegmentValueByName(n),
-            );
+            // Preserve the canonical instant across the switch: read the current
+            // segments in the OLD zone, then re-project that instant into the new
+            // zone. (_toTemporal would read the already-updated newVal.)
             try {
-               const inst = Temporal.ZonedDateTime.from(
-                  { ...wall, ...timeRecord, timeZone: oldZid },
-                  { overflow: "constrain" },
-               ).toInstant();
+               const oldZid = parseZone(oldVal || "Z") ?? "UTC";
+               const inst = this.#segmentsToInstant(oldZid, "constrain");
                const newZid = parseZone(newVal || "Z") ?? "UTC";
                const { date: pd, time: tr } = instantToZonedRecord(inst, newZid);
-               const dateValues = this.#dateValuesFrom(pd);
-               const timeValues = timeToSegmentValues(tr, this.#smallestUnit);
-               this.setAllSegmentValues([...dateValues, ...timeValues], true);
+               this.setAllSegmentValues(
+                  [
+                     ...this.#dateValuesFrom(pd),
+                     ...timeToSegmentValues(tr, this.#smallestUnit),
+                  ],
+                  true,
+               );
             } catch {
                // Guard: if recomposition fails, leave segments unchanged
             }
@@ -293,7 +277,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
    #applyParsedDatetime(parsed, originalInput) {
       if (exceedsTimeSmallestUnit(parsed.time, this.#smallestUnit)) {
-         this.#emitPrecisionTruncated(originalInput, parsed.time);
+         this._emitPrecisionTruncated(originalInput, parsed.time);
       }
       const dateValues = this.#dateValuesFrom(parsed.date);
       const timeValues = timeToSegmentValues(parsed.time, this.#smallestUnit);
@@ -337,7 +321,20 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const datePart = s.slice(0, tIdx);
       const timePart = s.slice(tIdx + 1);
 
-      // Strict path: native-only parsing for the current format.
+      // Strict path is still Instant-canonical: require an explicit UTC offset
+      // or Z suffix, then project the resulting instant into the display zone.
+      // Strictness adds two guards on top of the flexible path — the date must
+      // be in this component's native format, and excess time precision throws
+      // instead of truncating.
+      const inst = parseAnyDatetime(s);
+      if (!inst) {
+         throw new RangeError(
+            `nova-datetime.value: cannot parse "${str}" — expected an ISO 8601 datetime with a UTC offset (e.g. "…Z" or "…+00:00")`,
+         );
+      }
+
+      // Native-format guard: reject ordinal input in calendar mode (and vice
+      // versa) even though the instant itself parsed.
       const parsedDate = this.#isOrdinal
          ? parseOrdinalDate(datePart)
          : parseCalendarDate(datePart);
@@ -347,49 +344,19 @@ export class NovaDatetime extends NovaTemporalInputBase {
             `nova-datetime.value: cannot parse "${datePart}" as ${dateLabel}`,
          );
       }
-      const dateValues = this.#dateValuesFrom(parsedDate);
 
+      // Precision guard: reject (rather than truncate) on the typed time.
       const t = parseTime(timePart);
-      if (!t) {
-         throw new RangeError(
-            `nova-datetime.value: cannot parse "${timePart}" as time`,
-         );
-      }
-      if (exceedsTimeSmallestUnit(t, this.#smallestUnit)) {
+      if (t && exceedsTimeSmallestUnit(t, this.#smallestUnit)) {
          throw new RangeError(
             `nova-datetime.value: input precision exceeds smallest-unit="${this.#smallestUnit}"`,
          );
       }
 
-      const timeValues = timeToSegmentValues(t, this.#smallestUnit);
+      const { date: pd, time: tr } = instantToZonedRecord(inst, this.#zoneId());
+      const dateValues = this.#dateValuesFrom(pd);
+      const timeValues = timeToSegmentValues(tr, this.#smallestUnit);
       this.setAllSegmentValues([...dateValues, ...timeValues], true);
-   }
-
-   /**
-    * Detail shape: `{ smallestUnit, input, parsedRecord }` — flat keys.
-    * Convention: fixed-schema events use flat keys; events with dynamic keys
-    * (e.g. per-slot data) nest them under a bag key like `slots`.
-    */
-   #emitPrecisionTruncated(input, parsedRecord) {
-      this.dispatchEvent(
-         new CustomEvent("precision-truncated", {
-            detail: {
-               smallestUnit: this.#smallestUnit,
-               input,
-               parsedRecord,
-            },
-            bubbles: true,
-            composed: true,
-         }),
-      );
-   }
-
-   _parseStrictValue(str) {
-      try {
-         this.parseAndSet(str, true);
-      } catch {
-         // Paste failed — leave segments unchanged
-      }
    }
 
    /**
@@ -405,6 +372,10 @@ export class NovaDatetime extends NovaTemporalInputBase {
          this.#applyParsedDatetime(instantToZonedRecord(inst, this.#zoneId()), s);
          return;
       }
+
+      // An unzoned datetime is rejected for free here: parseAnyDatetime failed
+      // above (no offset), and the anchored parseAnyDate / parseTime below both
+      // refuse a date-bearing string rather than truncating it to a component.
 
       // Date-only — set date segments, keep existing time
       const pd = parseAnyDate(s);
@@ -428,7 +399,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const t = parseTime(s);
       if (t) {
          if (exceedsTimeSmallestUnit(t, this.#smallestUnit)) {
-            this.#emitPrecisionTruncated(s, t);
+            this._emitPrecisionTruncated(s, t);
          }
          const dateValues = [];
          for (let i = 0; i < this.#dateSegmentCount; i++) {
@@ -444,18 +415,22 @@ export class NovaDatetime extends NovaTemporalInputBase {
    }
 
    _compareValues(a, b) {
-      const ia = parseAnyDatetime(a);
-      const ib = parseAnyDatetime(b);
-      if (!ia || !ib) return null;
-      return Temporal.Instant.compare(ia, ib);
+      return this._compareParsed(a, b, parseAnyDatetime, Temporal.Instant.compare);
    }
 
    // ── Interface contract ─────────────────────────────────────────────────────
 
-   /** @returns {Temporal.Instant|null} */
-   _toTemporal() {
-      const zid = this.#zoneId();
-
+   /**
+    * Build the canonical Instant from the current segments, reading the
+    * wall-clock fields in zone `zid`. Shared by `_toTemporal` (current zone)
+    * and the zone-change handler (old zone, to preserve the instant across a
+    * zone switch).
+    *
+    * @param {string} zid Temporal-valid zone id (output of `parseZone`)
+    * @param {"constrain"|"reject"} overflow
+    * @returns {Temporal.Instant}
+    */
+   #segmentsToInstant(zid, overflow) {
       let wall;
       if (this.#isOrdinal) {
          const pd = ordinalDateToPlainDate(
@@ -470,19 +445,21 @@ export class NovaDatetime extends NovaTemporalInputBase {
             day: this.getSegmentValueByName("day"),
          };
       }
-
       const timeRecord = buildTimeRecordFromSegments(
          (n) => this.getSegmentValueByName(n),
       );
+      return Temporal.ZonedDateTime.from(
+         { ...wall, ...timeRecord, timeZone: zid },
+         { overflow },
+      ).toInstant();
+   }
 
+   /** @returns {Temporal.Instant|null} */
+   _toTemporal() {
+      const overflow =
+         this.getAttribute("overflow") === "reject" ? "reject" : "constrain";
       try {
-         const overflow = this.getAttribute("overflow") === "reject"
-            ? "reject"
-            : "constrain";
-         return Temporal.ZonedDateTime.from(
-            { ...wall, ...timeRecord, timeZone: zid },
-            { overflow },
-         ).toInstant();
+         return this.#segmentsToInstant(this.#zoneId(), overflow);
       } catch {
          return null;
       }

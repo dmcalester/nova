@@ -53,6 +53,28 @@ test('paste with excess precision drops and emits event', async ({ page }) => {
   expect(result.detail).not.toBeNull();
 });
 
+test('paste of a valid but out-of-range datetime reports a range error, not "malformed"', async ({ page }) => {
+  // Regression: a valid ISO-8601 string that exceeds the field's max parsed
+  // fine but was reported as "Pasted text is malformed" — misleading. It is
+  // out of range, not malformed.
+  const detail = await page.evaluate(() => {
+    const el = document.createElement('nova-datetime');
+    el.setAttribute('max', '2026-04-20T00:00:00Z');
+    el.setAttribute('value', '2026-04-09T14:30:00Z');
+    document.body.appendChild(el);
+    let d = null;
+    el.addEventListener('nova-error', (e) => { d = e.detail; });
+    const dt = new DataTransfer();
+    dt.setData('text/plain', '2026-06-03T15:19:46Z'); // valid, but later than max
+    el.shadowRoot.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+    return d;
+  });
+  expect(detail).not.toBeNull();
+  expect(detail.code).toBe('paste-range');
+  expect(detail.message).not.toMatch(/malformed/i);
+  expect(detail.message).toMatch(/range/i);
+});
+
 test('matching precision does not emit precision-truncated', async ({ page }) => {
   const fired = await page.evaluate(() => {
     const el = document.querySelector('#el-nanos'); // smallest-unit=nanosecond

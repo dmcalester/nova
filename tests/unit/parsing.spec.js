@@ -185,6 +185,30 @@ test('parseAnyDatetime: missing T returns null', async ({ page }) => {
   expect(r).toBe(null);
 });
 
+// ── Anchored parsers reject component-truncation of a datetime ────────────
+// Temporal's PlainDate.from / PlainTime.from leniently extract a component
+// from a full datetime. The bare-date and bare-time parsers must reject that
+// so an unzoned datetime can't slip through a date-only / time-only path.
+
+test('parseCalendarDate: rejects an unzoned datetime instead of truncating to the date', async ({ page }) => {
+  // PlainDate.from('2026-04-09T14:30:00') leniently returns 2026-04-09 — reject it.
+  const r = await call(page, 'parseCalendarDate', '2026-04-09T14:30:00');
+  expect(r).toBeNull();
+});
+
+test('parseTime: rejects an unzoned datetime instead of truncating to the time', async ({ page }) => {
+  // PlainTime.from('2026-04-09T14:30:00') leniently returns 14:30:00 — reject it.
+  const r = await call(page, 'parseTime', '2026-04-09T14:30:00');
+  expect(r).toBeNull();
+});
+
+test('parseTime: still tolerates an offset suffix on a bare time', async ({ page }) => {
+  const r = await call(page, 'parseTime', '14:30:00-05:00');
+  expect(r).not.toBeNull();
+  expect(r.hour).toBe(14);
+  expect(r.minute).toBe(30);
+});
+
 test('parseAnyDatetime: no longer fires datetime-parse-error', async ({ page }) => {
   const events = await page.evaluate(() => {
     const seen = [];

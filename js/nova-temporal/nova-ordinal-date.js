@@ -147,14 +147,6 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
       }
    }
 
-   _parseStrictValue(str) {
-      try {
-         this.parseAndSet(str, true);
-      } catch {
-         // Paste failed — leave segments unchanged
-      }
-   }
-
    /**
     * @param {string} str
     * @throws {RangeError} when the pasted string cannot be parsed

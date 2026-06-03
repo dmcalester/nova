@@ -5,21 +5,6 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => window.__temporalReady === true);
 });
 
-test('clampDay: Jan 31 → Feb clamps to 28 in non-leap year', async ({ page }) => {
-  const r = await page.evaluate(() => window.clampDay(2025, 2, 31));
-  expect(r).toBe(28);
-});
-
-test('clampDay: Jan 31 → Feb clamps to 29 in leap year', async ({ page }) => {
-  const r = await page.evaluate(() => window.clampDay(2024, 2, 31));
-  expect(r).toBe(29);
-});
-
-test('clampDay: valid day is unchanged', async ({ page }) => {
-  const r = await page.evaluate(() => window.clampDay(2026, 4, 15));
-  expect(r).toBe(15);
-});
-
 test('instantToZonedRecord: UTC produces wall-clock matching the instant', async ({ page }) => {
   const r = await page.evaluate(() => {
     const inst = Temporal.Instant.from('2026-02-09T14:30:45.123456789Z');

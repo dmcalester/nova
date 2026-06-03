@@ -70,14 +70,6 @@ export class NovaDate extends NovaTemporalInputBase {
       this.setAllSegmentValues([d.year, d.month, d.day], true);
    }
 
-   _parseStrictValue(str) {
-      try {
-         this.parseAndSet(str, true);
-      } catch {
-         // Paste failed — leave segments unchanged
-      }
-   }
-
    /**
     * @param {string} str
     * @throws {RangeError} when the pasted string cannot be parsed
@@ -108,10 +100,7 @@ export class NovaDate extends NovaTemporalInputBase {
    }
 
    _compareValues(a, b) {
-      const pa = parseCalendarDate(a);
-      const pb = parseCalendarDate(b);
-      if (!pa || !pb) return null;
-      return Temporal.PlainDate.compare(pa, pb);
+      return this._compareParsed(a, b, parseCalendarDate, Temporal.PlainDate.compare);
    }
 
    // ── Interface contract ─────────────────────────────────────────────────────
