@@ -7,8 +7,6 @@ const TMP = "scripts/.tmp";
 
 const JS_ENTRIES = [
    "js/nova-temporal/nova-datetime.js",
-   "js/nova-temporal/nova-date.js",
-   "js/nova-temporal/nova-time.js",
    "js/nova-temporal/nova-duration.js",
    "js/nova-temporal/nova-temporal-group.js",
 ];

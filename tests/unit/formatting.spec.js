@@ -50,16 +50,6 @@ test('formatOrdinalDate round-trip', async ({ page }) => {
   expect(r).toBe('2026-099');
 });
 
-test('formatDuration: second smallest-unit', async ({ page }) => {
-  const r = await call(page, 'formatDuration', { days: 0, hours: 1, minutes: 30, seconds: 45 }, 'second');
-  expect(r).toBe('PT1H30M45S');
-});
-
-test('formatDuration: nanosecond smallest-unit preserves 9 digits', async ({ page }) => {
-  const r = await call(page, 'formatDuration', { days: 0, hours: 0, minutes: 0, seconds: 4, milliseconds: 567, microseconds: 891, nanoseconds: 234 }, 'nanosecond');
-  expect(r).toBe('PT4.567891234S');
-});
-
 test('formatDurationHuman: formats ISO-8601 duration', async ({ page }) => {
   const r = await call(page, 'formatDurationHuman', { days: 1, hours: 2, minutes: 30, seconds: 0 });
   expect(r).toBe('P1DT2H30M');

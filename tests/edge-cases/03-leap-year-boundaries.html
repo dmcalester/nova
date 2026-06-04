@@ -2,23 +2,22 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-date.js"></script>
 <script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
 <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
-<p>Valid leap day:</p>
-<nova-date id="leap-valid" value="2024-02-29"></nova-date>
-<p>Will clamp to Feb 28 (2025 is not leap):</p>
-<nova-date id="leap-clamped" value="2025-02-28"></nova-date>
+<p>Valid leap day (2024-02-29 = day 060):</p>
+<nova-ordinal-date id="leap-valid" value="2024-060"></nova-ordinal-date>
+<p>Feb 28 in non-leap year (2025-02-28 = day 059):</p>
+<nova-ordinal-date id="leap-clamped" value="2025-059"></nova-ordinal-date>
 <p>Ordinal day 366 in leap year:</p>
 <nova-ordinal-date id="ord-leap" value="2024-366"></nova-ordinal-date>
 <p>Ordinal day 365 in non-leap year (last day):</p>
 <nova-ordinal-date id="ord-nonleap" value="2025-365"></nova-ordinal-date>
 <p>Range spanning Feb 28 → Mar 1 in non-leap year:</p>
 <nova-temporal-group>
-  <nova-date slot="t0" value="2025-02-28"></nova-date>
-  <nova-date slot="t1" value="2025-03-01"></nova-date>
+  <nova-ordinal-date slot="t0" value="2025-059"></nova-ordinal-date>
+  <nova-ordinal-date slot="t1" value="2025-060"></nova-ordinal-date>
   <output slot="output"><span class="output-label">Duration</span><span class="output-value"></span></output>
 </nova-temporal-group>
 </body></html>

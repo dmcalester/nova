@@ -53,6 +53,28 @@ test('paste with excess precision drops and emits event', async ({ page }) => {
   expect(result.detail).not.toBeNull();
 });
 
+test('paste of a valid but out-of-range datetime reports a range error, not "malformed"', async ({ page }) => {
+  // Regression: a valid ISO-8601 string that exceeds the field's max parsed
+  // fine but was reported as "Pasted text is malformed" — misleading. It is
+  // out of range, not malformed.
+  const detail = await page.evaluate(() => {
+    const el = document.createElement('nova-datetime');
+    el.setAttribute('max', '2026-04-20T00:00:00Z');
+    el.setAttribute('value', '2026-04-09T14:30:00Z');
+    document.body.appendChild(el);
+    let d = null;
+    el.addEventListener('nova-error', (e) => { d = e.detail; });
+    const dt = new DataTransfer();
+    dt.setData('text/plain', '2026-06-03T15:19:46Z'); // valid, but later than max
+    el.shadowRoot.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+    return d;
+  });
+  expect(detail).not.toBeNull();
+  expect(detail.code).toBe('paste-range');
+  expect(detail.message).not.toMatch(/malformed/i);
+  expect(detail.message).toMatch(/range/i);
+});
+
 test('matching precision does not emit precision-truncated', async ({ page }) => {
   const fired = await page.evaluate(() => {
     const el = document.querySelector('#el-nanos'); // smallest-unit=nanosecond
@@ -134,4 +156,168 @@ test('value below min sets rangeUnderflow', async ({ page }) => {
     rangeUnderflow: document.querySelector('#el-min-max').validity.rangeUnderflow
   }));
   expect(v.rangeUnderflow).toBe(true);
+});
+
+test('nova-datetime: temporal getter returns Temporal.Instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const isInstant = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    return el.temporal instanceof Temporal.Instant;
+  });
+  expect(isInstant).toBe(true);
+});
+
+test('nova-datetime: temporal setter accepts Temporal.Instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    el.temporal = Temporal.Instant.from('2026-02-09T14:30:00Z');
+    return el.value;
+  });
+  expect(value).toBe('2026-02-09T14:30:00Z');
+});
+
+test('nova-datetime: temporalType is "Instant"', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const type = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').temporalType;
+  });
+  expect(type).toBe('Instant');
+});
+
+test('nova-datetime: temporal setter rejects PlainDateTime with TypeError', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const msg = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    try {
+      el.temporal = Temporal.PlainDateTime.from('2026-02-09T14:30:00');
+      return null;
+    } catch (e) {
+      return e.message;
+    }
+  });
+  expect(msg).toMatch(/Instant/);
+});
+
+test('nova-datetime: setting value with unzoned string throws', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const threw = await page.evaluate(() => {
+    document.body.innerHTML = '<nova-datetime></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    try {
+      el.value = '2026-02-09T14:30:00';
+      return false;
+    } catch (e) {
+      return e instanceof RangeError;
+    }
+  });
+  expect(threw).toBe(true);
+});
+
+test('nova-datetime: zone="-05:00" preserves canonical instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const temporalISO = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    return el.temporal.toString();
+  });
+  expect(temporalISO).toBe('2026-02-09T14:30:00Z');
+});
+
+test('nova-datetime: zone="-05:00" shifts displayed segments back five hours', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const hour = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    return el.getSegmentValueByName('hour');
+  });
+  expect(hour).toBe(9);
+});
+
+test('nova-datetime: zone change preserves canonical instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const result = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    const before = el.temporal.epochNanoseconds.toString();
+    el.setAttribute('zone', '-05:00');
+    const after = el.temporal.epochNanoseconds.toString();
+    return { before, after };
+  });
+  expect(result.before).toBe(result.after);
+});
+
+test('nova-datetime: IANA zone reports invalid-zone', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const code = await page.evaluate(async () => {
+    return new Promise((resolve) => {
+      document.addEventListener('nova-error', (e) => {
+        if (e.detail.code === 'invalid-zone') resolve(e.detail.code);
+      }, { once: true });
+      document.body.innerHTML =
+        '<nova-datetime zone="America/Denver" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    });
+  });
+  expect(code).toBe('invalid-zone');
+});
+
+test('nova-datetime: editing a segment in non-UTC zone recomposes correct instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const iso = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    const el = document.querySelector('nova-datetime');
+    // Display reads 09:30 in -05:00. Nudge minute from 30 to 31 (display 09:31 = 14:31Z).
+    el.setSegmentValueByName('minute', 31, true);
+    return el.temporal.toString();
+  });
+  expect(iso).toBe('2026-02-09T14:31:00Z');
+});
+
+test('nova-datetime: value-format="offset" emits with configured offset', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T09:30:00-05:00');
+});
+
+test('nova-datetime: value-format="z" (default) emits Z form regardless of zone', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T14:30:00Z');
+});
+
+test('nova-datetime: offset emission omits [zone] bracket', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime zone="+05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T19:30:00+05:00');
+  expect(value).not.toContain('[');
+});
+
+test('nova-datetime: value-format="offset" with UTC zone uses +00:00 suffix', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-datetime.html');
+  const value = await page.evaluate(() => {
+    document.body.innerHTML =
+      '<nova-datetime value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
+    return document.querySelector('nova-datetime').value;
+  });
+  expect(value).toBe('2026-02-09T14:30:00+00:00');
 });

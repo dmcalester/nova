@@ -8,8 +8,6 @@
  * Nanosecond precision throughout.
  */
 
-import { reportNovaError } from "./nova-temporal-errors.js";
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
@@ -65,9 +63,9 @@ function dateToRecord(pd) {
 }
 
 /**
- * Convert a Temporal.PlainTime or Temporal.PlainDateTime to a plain time record.
+ * Convert a Temporal.PlainTime to a plain time record.
  *
- * @param {Temporal.PlainTime|Temporal.PlainDateTime} t
+ * @param {Temporal.PlainTime} t
  * @returns {TimeRecord}
  */
 export function temporalToTimeRecord(t) {
@@ -112,11 +110,6 @@ function recordToPlainTime(t) {
 /** @param {CalendarDateRecord} d @returns {Temporal.PlainDate} */
 function recordToPlainDate(d) {
    return Temporal.PlainDate.from(d, { overflow: "reject" });
-}
-
-/** @param {DurationRecord} d @returns {Temporal.Duration} */
-function recordToDuration(d) {
-   return Temporal.Duration.from(d);
 }
 
 // (year, dayOfYear) → PlainDate. Temporal exposes the inverse (.dayOfYear)
@@ -179,6 +172,10 @@ export function parseTime(str) {
    let s = str.trim();
    if (s.startsWith("T") || s.startsWith("t")) s = s.slice(1);
    if (s.endsWith("Z") || s.endsWith("z")) s = s.slice(0, -1);
+   // Reject a date-bearing string: PlainTime.from would otherwise leniently
+   // truncate a full datetime down to its time. A `YYYY-` run marks a date;
+   // a bare `±HH:MM` offset (which we still tolerate) never contains one.
+   if (/\d{4}-\d/.test(s)) return null;
    try {
       return temporalToTimeRecord(Temporal.PlainTime.from(s));
    } catch {
@@ -258,10 +255,16 @@ export function exceedsTimeSmallestUnit(timeRecord, smallestUnit) {
  * @param {string} str
  * @returns {CalendarDateRecord|null} null on parse failure (does not throw)
  */
+const CALENDAR_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 export function parseCalendarDate(str) {
    if (!str) return null;
+   const s = str.trim();
+   // Anchor the shape: PlainDate.from would otherwise leniently truncate a
+   // full datetime ("2026-02-09T14:30:00") down to its date.
+   if (!CALENDAR_DATE_REGEX.test(s)) return null;
    try {
-      return dateToRecord(Temporal.PlainDate.from(str.trim()));
+      return dateToRecord(Temporal.PlainDate.from(s));
    } catch {
       return null;
    }
@@ -275,17 +278,6 @@ export function parseCalendarDate(str) {
 export function formatCalendarDate(d) {
    if (!d) return "";
    return recordToPlainDate(d).toString();
-}
-
-/**
- * @param {number} year
- * @param {number} month  - 1-12
- * @param {number} day    - clamped to [1, daysInMonth]
- * @returns {number}
- */
-export function clampDay(year, month, day) {
-   const max = daysInMonth(year, month);
-   return Math.max(1, Math.min(day, max));
 }
 
 // ── Ordinal date parsing / formatting ────────────────────────────────────────
@@ -359,24 +351,6 @@ export function parseDuration(str) {
 }
 
 /**
- * @param {DurationRecord|null|undefined} d
- * @param {DurationSmallestUnit} [smallestUnit="second"]
- * @returns {string} ISO 8601 duration ("PT…") or "" if d is falsy
- */
-export function formatDuration(d, smallestUnit = "second") {
-   if (!d) return "";
-   const td = recordToDuration(d);
-   const unit = String(smallestUnit || "second").replace(/s$/, "");
-   const opts = {
-      second: undefined,
-      millisecond: { fractionalSecondDigits: 3 },
-      microsecond: { fractionalSecondDigits: 6 },
-      nanosecond: { fractionalSecondDigits: 9 },
-   };
-   return td.toString(opts[unit]);
-}
-
-/**
  * Render a duration as a canonical ISO-8601 string (e.g. "P1DT2H30M").
  * Used by the group's output slot and shared across the package as the single
  * formatted-duration boundary. An empty duration formats as "PT0S".
@@ -393,16 +367,80 @@ export function formatDurationHuman(d) {
    }
 }
 
-// ── Now (UTC) ────────────────────────────────────────────────────────────────
+
+// ── Military (NATO single-letter) time zones ─────────────────────────────────
+// Fixed UTC offsets only. J ("Juliet") is intentionally excluded — it denotes
+// the observer's local time, not a fixed offset.
+export const MILITARY_ZONES = Object.freeze({
+   A: 1,  B: 2,  C: 3,  D: 4,  E: 5,  F: 6,  G: 7,  H: 8,  I: 9,
+   K: 10, L: 11, M: 12,
+   N: -1, O: -2, P: -3, Q: -4, R: -5, S: -6, T: -7, U: -8, V: -9,
+   W: -10, X: -11, Y: -12,
+   Z: 0,
+});
+
 /**
- * Current wall-clock time in UTC. The library is UTC-only by design — the
- * backend (Python/telemetry) is the source of truth and stores everything
- * as UTC, so widgets read and write UTC without offset conversion.
- *
- * @returns {Temporal.PlainDateTime}
+ * @param {string} letter A–Z (case-insensitive), excluding J.
+ * @returns {number|null} offset hours, or null if not a valid military zone.
  */
-export function nowUTC() {
-   return Temporal.Now.plainDateTimeISO("UTC");
+export function militaryZoneOffset(letter) {
+   if (typeof letter !== "string" || letter.length !== 1) return null;
+   const key = letter.toUpperCase();
+   return Object.prototype.hasOwnProperty.call(MILITARY_ZONES, key)
+      ? MILITARY_ZONES[key]
+      : null;
+}
+
+const NUMERIC_OFFSET_REGEX = /^([+-])(\d{2}):(\d{2})$/;
+
+/**
+ * Parse a zone identifier accepted by nova-datetime / nova-clock attributes.
+ *
+ * Accepted inputs:
+ *   - Military single letter (Z, A–Y excluding J), case-insensitive
+ *   - Numeric offset "+HH:MM" or "-HH:MM" (with valid HH 00–23, MM 00–59)
+ *
+ * IANA names ("America/Denver", "Europe/London") are rejected: the library
+ * is fixed-offset only, which structurally excludes DST.
+ *
+ * @param {string} str
+ * @returns {string|null} A Temporal-valid zone identifier ("UTC", "+05:00",
+ *   "-09:00") or null if `str` is not an accepted zone.
+ */
+export function parseZone(str) {
+   if (typeof str !== "string" || str.length === 0) return null;
+
+   if (str.length === 1) {
+      const offset = militaryZoneOffset(str);
+      if (offset == null) return null;
+      if (offset === 0) return "UTC";
+      const sign = offset > 0 ? "+" : "-";
+      return `${sign}${String(Math.abs(offset)).padStart(2, "0")}:00`;
+   }
+
+   const m = NUMERIC_OFFSET_REGEX.exec(str);
+   if (!m) return null;
+   const hh = parseInt(m[2], 10);
+   const mm = parseInt(m[3], 10);
+   if (hh > 23 || mm > 59) return null;
+   return `${m[1]}${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+/**
+ * Project an Instant into a fixed-offset zone and return its wall-clock
+ * fields as a date + time record pair. Used by Instant-canonical components
+ * (nova-datetime, nova-clock) for segment rendering.
+ *
+ * @param {Temporal.Instant} instant
+ * @param {string} zoneId  Temporal-valid zone identifier (output of parseZone)
+ * @returns {{date: Temporal.PlainDate, time: TimeRecord}}
+ */
+export function instantToZonedRecord(instant, zoneId) {
+   const zdt = instant.toZonedDateTimeISO(zoneId);
+   return {
+      date: zdt.toPlainDate(),
+      time: temporalToTimeRecord(zdt),
+   };
 }
 
 // ── Flexible parsing helpers ──────────────────────────────────────────────────
@@ -429,76 +467,48 @@ export function parseAnyDate(str) {
 }
 
 /**
- * Parse a datetime string in any well-formed ISO 8601 form and normalize to UTC.
+ * Parse an ISO 8601 datetime string into a `Temporal.Instant`.
  *
- * Accepts:
- *  - Zoned: `2026-02-09T14:30:00Z`, `2026-02-09T14:30:00-05:00`, `2026-02-09T14:30:00+00:00[UTC]`
- *  - Unzoned: `2026-02-09T14:30:00` (treated as UTC by convention)
- *  - Ordinal: `2026-040T14:30:00Z` and unzoned ordinal forms
+ * Accepted forms:
+ *   - Z form:              "2026-02-09T14:30:00Z"
+ *   - Numeric offset:      "2026-02-09T14:30:00-05:00"
+ *   - Bracketed offset:    "2026-02-09T14:30:00+00:00[UTC]"
+ *   - Ordinal Z form:      "2026-040T14:30:00Z"
+ *   - Ordinal w/ offset:   "2026-040T14:30:00-05:00"
+ *
+ * Unzoned input ("2026-02-09T14:30:00", no Z or offset) returns `null` —
+ * the library is fixed-offset-only and does not infer a zone.
  *
  * @param {string} str
- * @returns {{date: Temporal.PlainDate, time: TimeRecord}|null} null on parse failure
+ * @returns {Temporal.Instant|null}
  */
 export function parseAnyDatetime(str) {
    if (!str) return null;
 
-   // Offset-bearing calendar-date strings (Z, ±HH:MM, [zone]) route through
-   // Instant.from for native UTC normalization. Ordinal-date forms
-   // (YYYY-DDDT…) are not understood by Instant.from and always go through
-   // the T-split path. Non-offset strings go straight to T-split. Real
-   // Instant errors on offset-bearing calendar input surface here rather
-   // than silently routing through the fallback parser.
    const isOrdinal = /^\d{4}-\d{3}T/.test(str);
-   const hasOffsetOrZone = /[Zz]$|[+-]\d\d:?\d\d(?:\b|\[)|\[[^\]]+\]$/.test(str);
-
-   if (!isOrdinal && hasOffsetOrZone) {
+   if (isOrdinal) {
+      // Native Temporal.Instant.from doesn't understand YYYY-DDD; convert
+      // the ordinal prefix to calendar form and splice back into the
+      // original string, leaving the offset/zone suffix intact.
+      const tIdx = str.indexOf("T");
+      const prefix = str.slice(0, tIdx);
+      const suffix = str.slice(tIdx);
+      const pd = parseAnyDate(prefix);
+      if (!pd) return null;
       try {
-         const inst = Temporal.Instant.from(str);
-         const pdt = inst.toZonedDateTimeISO("UTC").toPlainDateTime();
-         return {
-            date: pdt.toPlainDate(),
-            time: temporalToTimeRecord(pdt),
-         };
-      } catch (e) {
-         reportNovaError(
-            null,
-            "datetime-parse-error",
-            `Failed to parse offset-bearing datetime "${str}"`,
-            { input: str, error: e },
-         );
+         return Temporal.Instant.from(`${pd.toString()}${suffix}`);
+      } catch {
          return null;
       }
    }
 
-   const tIdx = str.indexOf("T");
-   if (tIdx < 0) return null;
-
-   const datePart = str.slice(0, tIdx);
-   const timePart = str.slice(tIdx + 1);
-
-   const date = parseAnyDate(datePart);
-   if (!date) return null;
-
-   const time = parseTime(timePart);
-   if (!time) return null;
-
-   return { date, time };
+   try {
+      return Temporal.Instant.from(str);
+   } catch {
+      return null;
+   }
 }
 
-/**
- * Extract a time record from either a bare time string or a full datetime
- * string (splitting on `T`).
- *
- * @param {string} str
- * @returns {TimeRecord|null} null on parse failure
- */
-export function parseTimeFlexible(str) {
-   const direct = parseTime(str);
-   if (direct) return direct;
-   const tIdx = str.indexOf("T");
-   if (tIdx > 0) return parseTime(str.slice(tIdx + 1));
-   return null;
-}
 
 /**
  * Parse a `min`/`max` constraint string into the Temporal type matching a
@@ -507,8 +517,8 @@ export function parseTimeFlexible(str) {
  * `reportNovaError`.
  *
  * @param {string} str
- * @param {"PlainDateTime"|"PlainDate"|"PlainTime"|"Duration"} temporalType
- * @returns {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration}
+ * @param {"Instant"|"PlainDate"|"PlainTime"|"Duration"} temporalType
+ * @returns {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration}
  * @throws {RangeError}
  */
 export function parseConstraintByType(str, temporalType) {
@@ -518,10 +528,10 @@ export function parseConstraintByType(str, temporalType) {
       );
    };
    switch (temporalType) {
-      case "PlainDateTime": {
-         const parsed = parseAnyDatetime(str);
-         if (!parsed) fail();
-         return parsed.date.toPlainDateTime(parsed.time);
+      case "Instant": {
+         const inst = parseAnyDatetime(str);
+         if (!inst) fail();
+         return inst;
       }
       case "PlainDate": {
          const pd = parseAnyDate(str);

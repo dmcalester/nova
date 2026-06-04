@@ -39,10 +39,9 @@ export { NovaSegmentInputBase } from "../nova-segment-input-base.js";
 export { NovaTemporalInputBase } from "./nova-temporal-input-base.js";
 
 // Components (importing registers the custom elements)
-export { NovaDate } from "./nova-date.js";
-export { NovaTime } from "./nova-time.js";
 export { NovaOrdinalDate } from "./nova-ordinal-date.js";
 export { NovaDuration } from "./nova-duration.js";
 export { NovaDatetime } from "./nova-datetime.js";
 export { NovaTemporalGroup } from "./nova-temporal-group.js";
 export { NovaClock } from "./nova-clock.js";
+export { NovaElapsed } from "./nova-elapsed.js";

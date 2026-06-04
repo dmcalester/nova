@@ -39,15 +39,15 @@ test('Interface Contract: .value and .temporal accessors', async ({ page }) => {
     }
 
     const initialValue = el.value;
-    const initialIsPDT = el.temporal instanceof Temporal.PlainDateTime;
+    const initialIsInstant = el.temporal instanceof Temporal.Instant;
 
-    el.temporal = Temporal.PlainDateTime.from('2026-02-09T16:00:00');
+    el.temporal = Temporal.Instant.from('2026-02-09T16:00:00Z');
     const afterSetValue = el.value;
 
-    return { initialValue, initialIsPDT, afterSetValue };
+    return { initialValue, initialIsInstant, afterSetValue };
   });
   expect(r.initialValue).toBe('2026-02-09T14:30:00Z');
-  expect(r.initialIsPDT).toBe(true);
+  expect(r.initialIsInstant).toBe(true);
   expect(r.afterSetValue).toBe('2026-02-09T16:00:00Z');
 });
 
@@ -84,15 +84,15 @@ test('Form Integration: FormData captures ISO value strings', async ({ page }) =
     const form = document.createElement('form');
     form.id = 'obs-form';
     form.innerHTML = `
-      <nova-date name="obs_date" value="2026-02-09" required></nova-date>
-      <nova-time name="obs_time" smallest-unit="second" value="14:30:00Z"></nova-time>
+      <nova-ordinal-date name="obs_date" value="2026-040" required></nova-ordinal-date>
+      <nova-datetime name="obs_datetime" smallest-unit="second" value="2026-02-09T14:30:00Z"></nova-datetime>
     `;
     document.body.appendChild(form);
     // Wait for both children to upgrade
     let attempts = 0;
     while (
-      (form.querySelector('nova-date').value === undefined ||
-       form.querySelector('nova-time').value === undefined) &&
+      (form.querySelector('nova-ordinal-date').value === undefined ||
+       form.querySelector('nova-datetime').value === undefined) &&
       attempts < 50
     ) {
       await new Promise((r) => setTimeout(r, 10));
@@ -100,7 +100,7 @@ test('Form Integration: FormData captures ISO value strings', async ({ page }) =
     }
     return Object.fromEntries(new FormData(form));
   });
-  expect(r).toEqual({ obs_date: '2026-02-09', obs_time: '14:30:00Z' });
+  expect(r).toEqual({ obs_date: '2026-040', obs_datetime: '2026-02-09T14:30:00Z' });
 });
 
 // ── Mode-specific group examples ────────────────────────────────────────────

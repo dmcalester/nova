@@ -15,8 +15,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" />
 
     <script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-date.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-time.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
     <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
     <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
@@ -187,12 +186,11 @@
          <h2>Time: smallest-unit</h2>
          <p>
             Control the precision of the time portion with
-            <code>smallest-unit</code>. Time-based components only support
-            <code>smallest-unit</code> — the largest unit is fixed by the
-            component itself (date for <code>nova-datetime</code>, hour for
-            <code>nova-time</code>). Valid time units are <code>hour</code>,
-            <code>minute</code>, <code>second</code>, <code>millisecond</code>,
-            <code>microsecond</code>, and <code>nanosecond</code>.
+            <code>smallest-unit</code>. The largest unit is fixed by the
+            component itself (date for <code>nova-datetime</code>). Valid time
+            units are <code>minute</code>, <code>second</code>,
+            <code>millisecond</code>, <code>microsecond</code>, and
+            <code>nanosecond</code>.
          </p>
       </div>
 
@@ -624,11 +622,11 @@
 
       <section class="demo-section">
       <div class="instructions">
-         <h2>Date-Only Range</h2>
+         <h2>Ordinal-Date Range</h2>
          <p>
             The group works with any temporal type — not just
-            <code>nova-datetime</code>. Use <code>nova-date</code> for
-            day-grain ranges; the output reports days.
+            <code>nova-datetime</code>. Use <code>nova-ordinal-date</code> for
+            day-grain (day-of-year) ranges; the output reports days.
          </p>
       </div>
 
@@ -636,42 +634,14 @@
          <div class="demo-stage">
             <nova-temporal-group>
                <label slot="t0-label" for="date-t0">Check-in</label>
-               <nova-date slot="t0" id="date-t0" value="2026-05-01"></nova-date>
+               <nova-ordinal-date slot="t0" id="date-t0" value="2026-121"></nova-ordinal-date>
                <label slot="t1-label" for="date-t1">Check-out</label>
-               <nova-date slot="t1" id="date-t1" value="2026-05-08"></nova-date>
+               <nova-ordinal-date slot="t1" id="date-t1" value="2026-128"></nova-ordinal-date>
                <output slot="output"><span class="output-label">Stay</span> <span class="output-value"></span></output>
             </nova-temporal-group>
             <pre><code class="language-markup">&lt;nova-temporal-group&gt;
-   &lt;nova-date slot="t0" value="2026-05-01"&gt;&lt;/nova-date&gt;
-   &lt;nova-date slot="t1" value="2026-05-08"&gt;&lt;/nova-date&gt;
-   &lt;output slot="output"&gt;…&lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
-         </div>
-      </div>
-      </section>
-
-      <section class="demo-section">
-      <div class="instructions">
-         <h2>Time-Only Range</h2>
-         <p>
-            <code>nova-time</code> ranges stay clock-only — there's no
-            overnight inference, so the duration is computed directly from
-            <code>t0.until(t1)</code> with hours as the largest unit.
-         </p>
-      </div>
-
-      <div class="demo-wrapper">
-         <div class="demo-stage">
-            <nova-temporal-group>
-               <label slot="t0-label" for="time-t0">Open</label>
-               <nova-time slot="t0" id="time-t0" value="09:00"></nova-time>
-               <label slot="t1-label" for="time-t1">Close</label>
-               <nova-time slot="t1" id="time-t1" value="17:30"></nova-time>
-               <output slot="output"><span class="output-label">Open for</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
-   &lt;nova-time slot="t0" value="09:00"&gt;&lt;/nova-time&gt;
-   &lt;nova-time slot="t1" value="17:30"&gt;&lt;/nova-time&gt;
+   &lt;nova-ordinal-date slot="t0" value="2026-121"&gt;&lt;/nova-ordinal-date&gt;
+   &lt;nova-ordinal-date slot="t1" value="2026-128"&gt;&lt;/nova-ordinal-date&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
 &lt;/nova-temporal-group&gt;</code></pre>
          </div>
@@ -696,9 +666,9 @@
          <div class="demo-stage">
             <nova-temporal-group id="fmt-group" output-format="interval">
                <label slot="t0-label" for="fmt-t0">Start</label>
-               <nova-date slot="t0" id="fmt-t0" value="2026-05-01"></nova-date>
+               <nova-datetime slot="t0" id="fmt-t0" value="2026-05-01T09:00:00Z"></nova-datetime>
                <label slot="t1-label" for="fmt-t1">End</label>
-               <nova-date slot="t1" id="fmt-t1" value="2026-05-08"></nova-date>
+               <nova-datetime slot="t1" id="fmt-t1" value="2026-05-08T17:00:00Z"></nova-datetime>
                <output slot="output"><span class="output-label">ISO</span> <span class="output-value"></span></output>
             </nova-temporal-group>
 
@@ -714,8 +684,8 @@
             </p>
 
             <pre><code class="language-markup">&lt;nova-temporal-group output-format="interval"&gt;
-   &lt;nova-date slot="t0" value="2026-05-01"&gt;&lt;/nova-date&gt;
-   &lt;nova-date slot="t1" value="2026-05-08"&gt;&lt;/nova-date&gt;
+   &lt;nova-datetime slot="t0" value="2026-05-01T09:00:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-datetime slot="t1" value="2026-05-08T17:00:00Z"&gt;&lt;/nova-datetime&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
 &lt;/nova-temporal-group&gt;</code></pre>
          </div>

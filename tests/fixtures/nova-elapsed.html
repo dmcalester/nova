@@ -1,0 +1,33 @@
+<!doctype html>
+<html><head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/css/nova-tokens.css">
+  <link rel="stylesheet" href="/css/nova-colors.css">
+  <script type="module" src="/js/nova-temporal/nova-elapsed.js"></script>
+  <style>
+    nova-elapsed:state(out-of-range) { outline: 2px solid red; }
+  </style>
+</head><body>
+  <!-- MET — epoch far in the past, runs through T-0, so "continue" -->
+  <nova-elapsed id="el-met" stopped threshold-behavior="continue" prefix="T"
+                epoch="2000-01-01T00:00:00Z"></nova-elapsed>
+
+  <!-- threshold-behavior="freeze" (default), epoch already in the past →
+       frozen at the threshold on load, with no witnessed edge (reload case) -->
+  <nova-elapsed id="el-frozen" stopped prefix="T"
+                epoch="2000-01-01T00:00:00Z"></nova-elapsed>
+
+  <!-- epoch far in the future → counts down, T- -->
+  <nova-elapsed id="el-countdown" stopped prefix="T"
+                epoch="2100-01-01T00:00:00Z"></nova-elapsed>
+
+  <!-- live MET counter, sub-second window -->
+  <nova-elapsed id="el-live" threshold-behavior="continue" prefix="T"
+                smallest-unit="millisecond" epoch="2000-01-01T00:00:00Z"></nova-elapsed>
+
+  <!-- unparseable epoch → placeholder -->
+  <nova-elapsed id="el-invalid" prefix="T" epoch="not-a-date"></nova-elapsed>
+
+  <!-- epoch assigned at runtime by the spec, to exercise threshold crossing -->
+  <nova-elapsed id="el-crossing" prefix="T" threshold-behavior="warn"></nova-elapsed>
+</body></html>

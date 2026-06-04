@@ -1,8 +1,8 @@
 /**
  * nova-temporal-segments.js — Shared segment descriptors for temporal components
  *
- * Single source of truth for segment definitions used by nova-date, nova-time,
- * nova-ordinal-date, and nova-datetime.
+ * Single source of truth for segment definitions used by nova-ordinal-date
+ * and nova-datetime.
  */
 
 import {

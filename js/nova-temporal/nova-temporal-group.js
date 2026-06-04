@@ -2,11 +2,11 @@
  * <nova-temporal-group> — Generic coordination wrapper for temporal components
  *
  * Form-associated custom element that coordinates multiple temporal inputs
- * (nova-datetime, nova-date, nova-ordinal-date, nova-time) and duration inputs (nova-duration).
+ * (nova-datetime, nova-ordinal-date) and duration inputs (nova-duration).
  * Provides group-level validation and computed output.
  *
  * Slots:
- *   t0, t1, t2, ... — temporal inputs (any nova-datetime, nova-date, nova-ordinal-date, nova-time)
+ *   t0, t1, t2, ... — temporal inputs (any nova-datetime, nova-ordinal-date)
  *   d0, d1, d2, ... — duration inputs (nova-duration)
  *   output         — computed output display
  *   (label slots)  — t0-label, t1-label, d0-label, etc.
@@ -16,11 +16,9 @@
  *   - Has d[N] slots → compute mode (output: computed temporal)
  *
  * Type compatibility:
- *   - PlainDateTime family: nova-datetime
- *   - PlainDate family: nova-date, nova-ordinal-date
- *   - PlainTime family: nova-time
+ *   - Instant family: nova-datetime
+ *   - PlainDate family: nova-ordinal-date
  *   - Duration: nova-duration
- *   - Mixing within PlainDate family is allowed
  *   - Cross-family mixing produces a warning
  *
  * Attributes:
@@ -86,9 +84,8 @@ const DEFAULT_OUTPUT_FORMAT = {
  */
 
 const TYPE_FAMILY = {
-   PlainDateTime: "datetime",
+   Instant: "datetime",
    PlainDate: "date",
-   PlainTime: "time",
    Duration: "duration",
 };
 
@@ -661,7 +658,7 @@ export class NovaTemporalGroup extends HTMLElement {
     *   invalid: boolean,
     *   slots: Record<string, {
     *     value: string,
-    *     temporal: Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null,
+    *     temporal: Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null,
     *     valid: boolean
     *   }>
     * }}
@@ -747,18 +744,37 @@ export class NovaTemporalGroup extends HTMLElement {
       const endStr = lastSlot.formatTemporal(last);
       const durationStr = formatDurationHuman(duration);
 
+      // Range mode's default format is "duration".
+      return this.#assembleOutput(format, startStr, endStr, durationStr, durationStr);
+   }
+
+   /**
+    * Assemble an output string from the three building blocks for any of the
+    * five output formats. `fallback` is the result for the mode's default
+    * format — range mode defaults to the duration, compute mode to the end —
+    * which also covers an unrecognized format.
+    *
+    * @param {OutputFormat} format
+    * @param {string} startStr
+    * @param {string} endStr
+    * @param {string} durationStr
+    * @param {string} fallback
+    * @returns {string}
+    */
+   #assembleOutput(format, startStr, endStr, durationStr, fallback) {
       switch (format) {
          case "end":
             return endStr;
+         case "duration":
+            return durationStr;
          case "interval":
             return `${startStr}/${endStr}`;
          case "start-duration":
             return `${startStr}/${durationStr}`;
          case "duration-end":
             return `${durationStr}/${endStr}`;
-         case "duration":
          default:
-            return durationStr;
+            return fallback;
       }
    }
 
@@ -796,19 +812,8 @@ export class NovaTemporalGroup extends HTMLElement {
          durationStr = formatDurationHuman(sum);
       }
 
-      switch (format) {
-         case "duration":
-            return durationStr;
-         case "interval":
-            return `${startStr}/${endStr}`;
-         case "start-duration":
-            return `${startStr}/${durationStr}`;
-         case "duration-end":
-            return `${durationStr}/${endStr}`;
-         case "end":
-         default:
-            return endStr;
-      }
+      // Compute mode's default format is "end".
+      return this.#assembleOutput(format, startStr, endStr, durationStr, endStr);
    }
 
    /**
@@ -843,18 +848,17 @@ export class NovaTemporalGroup extends HTMLElement {
 
    /**
     * Returns true if every present duration slot can be added to `anchor`
-    * without silent truncation. PlainTime anchors cannot absorb day-or-larger
-    * components; PlainDate anchors cannot absorb sub-day components. Empty
-    * slots are skipped (caller decides what to do with incomplete state).
+    * without silent truncation. PlainDate anchors cannot absorb sub-day
+    * components. Empty slots are skipped (caller decides what to do with
+    * incomplete state).
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null} anchor
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.Duration|null} anchor
     * @returns {boolean}
     */
    #durationsCompatibleWithAnchor(anchor) {
       if (!anchor) return true;
-      const isPlainTime = anchor instanceof Temporal.PlainTime;
       const isPlainDate = anchor instanceof Temporal.PlainDate;
-      if (!isPlainTime && !isPlainDate) return true;
+      if (!isPlainDate) return true;
 
       for (const slotName of this.#durationSlots) {
          const dEl = this.#slots.get(slotName);
@@ -862,17 +866,13 @@ export class NovaTemporalGroup extends HTMLElement {
          const dur = dEl.temporal;
          if (!dur) continue;
 
-         if (isPlainTime && (dur.years || dur.months || dur.days)) {
-            return false;
-         }
          if (
-            isPlainDate &&
-            (dur.hours ||
-               dur.minutes ||
-               dur.seconds ||
-               dur.milliseconds ||
-               dur.microseconds ||
-               dur.nanoseconds)
+            dur.hours ||
+            dur.minutes ||
+            dur.seconds ||
+            dur.milliseconds ||
+            dur.microseconds ||
+            dur.nanoseconds
          ) {
             return false;
          }
@@ -882,18 +882,16 @@ export class NovaTemporalGroup extends HTMLElement {
 
    /**
     * Compute the signed duration from `first` to `last` for range mode.
-    * PlainTime endpoints use native PlainTime.until() directly. Time-only
-    * ranges do not infer dates or overnight/next-occurrence semantics.
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime} first
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime} last
+    * @param {Temporal.Instant|Temporal.PlainDate} first
+    * @param {Temporal.Instant|Temporal.PlainDate} last
     * @returns {Temporal.Duration}
     */
    #computeRangeDuration(first, last) {
-      // largestUnit explicit: PlainTime can't balance into days; everything
-      // else is balanced to days (calendar-unit balancing requires relativeTo
-      // and is anchor-sensitive — keep it day-and-below).
-      const largestUnit = first instanceof Temporal.PlainTime ? "hour" : "day";
+      // largestUnit explicit: Instant can't balance into days; PlainDate is
+      // balanced to days (calendar-unit balancing requires relativeTo and is
+      // anchor-sensitive — keep it day-and-below).
+      const largestUnit = first instanceof Temporal.Instant ? "hour" : "day";
       return first.until(last, { largestUnit });
    }
 
@@ -903,18 +901,38 @@ export class NovaTemporalGroup extends HTMLElement {
     * API call throws. Caller is expected to gate truncation risk via
     * #durationsCompatibleWithAnchor first.
     *
-    * @template {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} T
+    * @template {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} T
     * @param {T} anchor
     * @returns {T|null}
     */
    #applyDurations(anchor) {
       try {
+         // Calendar-unit guard for Instant t0: years/months/days have no
+         // well-defined meaning on an Instant. Force PT-form durations.
+         if (anchor instanceof Temporal.Instant) {
+            for (const slotName of this.#durationSlots) {
+               const dEl = this.#slots.get(slotName);
+               if (!dEl) continue;
+               const dur = dEl.temporal;
+               if (!dur) continue;
+               if (dur.years || dur.months || dur.days) {
+                  const msg =
+                     "Calendar-unit durations (years, months, days) cannot be applied to an Instant. Use PT-form (hours/minutes/seconds) instead.";
+                  this.#lastComputeError = new RangeError(msg);
+                  reportNovaError(this, "compute-error", msg, {
+                     duration: dur.toString(),
+                  });
+                  return null;
+               }
+            }
+         }
+
          let result = anchor;
-         // Duration.add doesn't accept overflow; PlainDate/Time/DateTime do.
+         // Duration.add and Instant.add don't accept overflow; PlainDate/Time/DateTime do.
          // Reject impossible additions (Jan 31 + P1M) instead of silently
          // clamping to Feb 28/29 — matches the package's strict-validity stance.
          const addOpts =
-            anchor instanceof Temporal.Duration
+            anchor instanceof Temporal.Duration || anchor instanceof Temporal.Instant
                ? undefined
                : { overflow: "reject" };
          for (const slotName of this.#durationSlots) {
@@ -1157,24 +1175,43 @@ export class NovaTemporalGroup extends HTMLElement {
 
    /**
     * Compute mode: a duration with components the t0 anchor cannot absorb
-    * (day-or-larger against PlainTime; sub-day against PlainDate) would
-    * otherwise be silently truncated by Temporal. Surface as customError
-    * instead of letting the user see a wrong-but-plausible computed value.
+    * (sub-day against PlainDate; calendar units against Instant) would
+    * otherwise be silently truncated by Temporal or throw. Surface as
+    * customError instead of letting the user see a wrong-but-plausible
+    * computed value.
     */
    #validateDurationCompatibility() {
       if (this.#inferredMode === "range") return { valid: true };
       const t0 = this.#slots.get("t0");
       if (!t0 || !t0.temporal) return { valid: true };
+
+      // Instant anchor: calendar units (years/months/days) are not well-defined.
+      if (t0.temporal instanceof Temporal.Instant) {
+         for (const slotName of this.#durationSlots) {
+            const dEl = this.#slots.get(slotName);
+            if (!dEl) continue;
+            const dur = dEl.temporal;
+            if (!dur) continue;
+            if (dur.years || dur.months || dur.days) {
+               return {
+                  valid: false,
+                  flags: { customError: true },
+                  message:
+                     "Calendar-unit durations (years, months, days) cannot be applied to an Instant anchor. Use PT-form (hours/minutes/seconds) instead.",
+               };
+            }
+         }
+         return { valid: true };
+      }
+
       if (this.#durationsCompatibleWithAnchor(t0.temporal)) {
          return { valid: true };
       }
-      const isPlainTime = t0.temporal instanceof Temporal.PlainTime;
       return {
          valid: false,
          flags: { customError: true },
-         message: isPlainTime
-            ? "Duration with day-or-larger components cannot be applied to a time anchor."
-            : "Duration with sub-day components cannot be applied to a date anchor.",
+         message:
+            "Duration with sub-day components cannot be applied to a date anchor.",
       };
    }
 
@@ -1305,9 +1342,9 @@ export class NovaTemporalGroup extends HTMLElement {
    }
 
    /**
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} a
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} b
-    * @param {string} temporalType  - "PlainDateTime" | "PlainDate" | "PlainTime" | "Duration"
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} a
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} b
+    * @param {string} temporalType  - "Instant" | "PlainDate" | "PlainTime" | "Duration"
     * @returns {-1|0|1|null}
     */
    #compareTemporal(a, b, temporalType) {

@@ -4,8 +4,8 @@
  *
  * Provides the public `temporal` getter/setter, `temporalType` (static and
  * instance), and the `_toTemporal` / `_formatTemporal` protected hooks that
- * concrete temporal widgets (nova-time, nova-date, nova-datetime,
- * nova-ordinal-date, nova-duration) implement.
+ * concrete temporal widgets (nova-datetime, nova-ordinal-date,
+ * nova-duration) implement.
  *
  * Generic segmented inputs (e.g. a future nova-tle) should extend
  * NovaSegmentInputBase directly and skip this layer.
@@ -15,14 +15,14 @@ import { NovaSegmentInputBase } from "../nova-segment-input-base.js";
 import { reportNovaError } from "./nova-temporal-errors.js";
 
 /**
- * @typedef {"PlainDateTime"|"PlainDate"|"PlainTime"|"Duration"|null} TemporalTypeName
+ * @typedef {"Instant"|"PlainDate"|"PlainTime"|"Duration"|null} TemporalTypeName
  */
 
 export class NovaTemporalInputBase extends NovaSegmentInputBase {
    /**
     * Temporal type identifier for interface contract.
     * Subclasses override with one of:
-    *   'PlainDateTime' | 'PlainDate' | 'PlainTime' | 'Duration'
+    *   'Instant' | 'PlainDate' | 'PlainTime' | 'Duration'
     *
     * @returns {TemporalTypeName}
     */
@@ -33,22 +33,15 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
    /**
     * Get the current value as a Temporal object.
     *
-    * For datetime components this is `Temporal.PlainDateTime` interpreted as
-    * UTC wall-clock time *by convention* — the library enforces UTC at the
-    * value boundary, but the type itself carries no timezone. Reading
-    * wall-clock fields (`.year`, `.hour`, …) returns the UTC values as
-    * expected.
+    * Per-subclass type:
+    *   <nova-datetime>     → Temporal.Instant
+    *   <nova-ordinal-date> → Temporal.PlainDate
+    *   <nova-duration>     → Temporal.Duration
     *
-    * **Footgun:** do not call `.toZonedDateTime(nonUTC)` on the result. That
-    * interprets the wall-clock fields *as if* they were already in the target
-    * zone, producing the wrong instant. If you need an instant in a specific
-    * zone, parse from `.value` instead:
-    *   `Temporal.Instant.from(el.value).toZonedDateTimeISO('zone')`.
+    * Returns `null` when empty, or — for <nova-ordinal-date> in day-only mode
+    * — when the component cannot produce a Temporal value at all.
     *
-    * Returns `null` if the value is empty or — for `<nova-ordinal-date>` in
-    * day-only mode — if the component cannot produce a Temporal value at all.
-    *
-    * @returns {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
+    * @returns {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
     */
    get temporal() {
       if (this.isEmpty) return null;
@@ -64,7 +57,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     * external value string. Group wrappers should use this method instead of
     * private subclass internals.
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} t
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} t
     * @returns {string}
     */
    formatTemporal(t) {
@@ -106,7 +99,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     * Subclasses must override. Return `null` when the current configuration
     * cannot produce a Temporal value (e.g. day-only ordinal date).
     *
-    * @returns {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
+    * @returns {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
     */
    _toTemporal() {
       return null;
@@ -117,7 +110,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     * string (the same format `formattedValue` produces). Subclasses must
     * override.
     *
-    * @param {Temporal.PlainDateTime|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} _t
+    * @param {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration} _t
     * @returns {string}
     */
    _formatTemporal(_t) {
@@ -136,20 +129,75 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
    }
 
    /**
+    * Strict paste hook shared by every temporal input: parse in native-only
+    * mode (`parseAndSet(str, true)`) and swallow failures, since a paste must
+    * not throw. Overrides the no-op default in NovaSegmentInputBase.
+    *
+    * @param {string} str
+    */
+   _parseStrictValue(str) {
+      try {
+         this.parseAndSet(str, true);
+      } catch {
+         // Paste failed — leave segments unchanged
+      }
+   }
+
+   /**
+    * Compare two formatted values through a parser and a Temporal comparator,
+    * returning `null` when either fails to parse. Centralizes the
+    * parse → null-check → compare skeleton that the date/time/datetime inputs
+    * share; the base's min/max validation treats `null` as "incomparable".
+    *
+    * @param {string} a
+    * @param {string} b
+    * @param {(s: string) => unknown} parse maps a value string to a Temporal-ish operand
+    * @param {(x: unknown, y: unknown) => number} compare e.g. `Temporal.PlainDate.compare`
+    * @returns {number|null}
+    */
+   _compareParsed(a, b, parse, compare) {
+      const pa = parse(a);
+      const pb = parse(b);
+      if (!pa || !pb) return null;
+      return compare(pa, pb);
+   }
+
+   /**
+    * Dispatch the shared `precision-truncated` event. Detail uses flat keys
+    * `{ smallestUnit, input, parsedRecord }`. Only inputs that expose a
+    * `smallestUnit` getter (nova-datetime) emit this.
+    *
+    * @param {string} input the original string that carried excess precision
+    * @param {object} parsedRecord the fully-parsed time record (pre-truncation)
+    */
+   _emitPrecisionTruncated(input, parsedRecord) {
+      this.dispatchEvent(
+         new CustomEvent("precision-truncated", {
+            detail: { smallestUnit: this.smallestUnit, input, parsedRecord },
+            bubbles: true,
+            composed: true,
+         }),
+      );
+   }
+
+   /**
     * Dispatch a `nova-error` event so the host app can decide what to show
     * (toast, alert, log, telemetry). Hosts that want the v1 alert behavior
     * can listen and call `alert()` themselves.
+    *
+    * The message is type-specific: a `range` paste parsed successfully but
+    * fell outside the field's min/max, so it must not be described as
+    * malformed.
     *
     * @param {'parse-error'|'range'} type
     * @param {string} text
     */
    _onPasteError(type, text) {
-      reportNovaError(
-         this,
-         `paste-${type}`,
-         `Pasted text is malformed: "${text}"`,
-         { text },
-      );
-      // user-invalid validity already holds from the failed parse
+      const message =
+         type === "range"
+            ? `Pasted value is out of range: "${text}"`
+            : `Pasted text is malformed: "${text}"`;
+      reportNovaError(this, `paste-${type}`, message, { text });
+      // user-invalid validity already holds from the failed parse / range check
    }
 }

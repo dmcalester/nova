@@ -2,9 +2,7 @@ import { test, expect } from '../helpers/coverage.js';
 
 const FIXTURES = {
   'nova-datetime': '/tests/fixtures/nova-datetime.html',
-  'nova-date': '/tests/fixtures/nova-date.html',
   'nova-ordinal-date': '/tests/fixtures/nova-ordinal-date.html',
-  'nova-time': '/tests/fixtures/nova-time.html',
   'nova-duration': '/tests/fixtures/nova-duration.html',
 };
 
@@ -24,32 +22,17 @@ test('nova-datetime.temporal = PlainDate throws TypeError', async ({ page }) => 
   });
   expect(r.threw).toBe(true);
   expect(r.name).toBe('TypeError');
-  expect(r.msg).toMatch(/PlainDateTime/);
+  expect(r.msg).toMatch(/Instant/);
 });
 
-test('nova-date.temporal = PlainTime throws TypeError', async ({ page }) => {
-  await page.goto(FIXTURES['nova-date']);
+test('nova-ordinal-date.temporal = PlainTime throws TypeError', async ({ page }) => {
+  await page.goto(FIXTURES['nova-ordinal-date']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-date');
+    const el = document.createElement('nova-ordinal-date');
+    el.setAttribute('value', '2026-040'); // year mode → PlainDate-typed
     document.body.appendChild(el);
     try {
       el.temporal = Temporal.PlainTime.from('14:30:00');
-      return { threw: false };
-    } catch (e) {
-      return { threw: true, name: e.constructor.name };
-    }
-  });
-  expect(r.threw).toBe(true);
-  expect(r.name).toBe('TypeError');
-});
-
-test('nova-time.temporal = Duration throws TypeError', async ({ page }) => {
-  await page.goto(FIXTURES['nova-time']);
-  const r = await page.evaluate(() => {
-    const el = document.createElement('nova-time');
-    document.body.appendChild(el);
-    try {
-      el.temporal = Temporal.Duration.from('PT1H');
       return { threw: false };
     } catch (e) {
       return { threw: true, name: e.constructor.name };
@@ -110,37 +93,27 @@ test('nova-ordinal-date.temporal = PlainDate in day-only mode throws TypeError',
 
 // ── Setter accepts the correct type ─────────────────────────────────────────
 
-test('nova-datetime.temporal = PlainDateTime sets the value', async ({ page }) => {
+test('nova-datetime.temporal = Instant sets the value', async ({ page }) => {
   await page.goto(FIXTURES['nova-datetime']);
   const v = await page.evaluate(() => {
     const el = document.createElement('nova-datetime');
     document.body.appendChild(el);
-    el.temporal = Temporal.PlainDateTime.from('2026-02-09T14:30:00');
+    el.temporal = Temporal.Instant.from('2026-02-09T14:30:00Z');
     return el.value;
   });
   expect(v).toBe('2026-02-09T14:30:00Z');
 });
 
-test('nova-date.temporal = PlainDate sets the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-date']);
+test('nova-ordinal-date.temporal = PlainDate sets the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-ordinal-date']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-date');
+    const el = document.createElement('nova-ordinal-date');
+    el.setAttribute('value', '2026-040'); // year mode → PlainDate-typed
     document.body.appendChild(el);
     el.temporal = Temporal.PlainDate.from('2026-02-09');
     return el.value;
   });
-  expect(v).toBe('2026-02-09');
-});
-
-test('nova-time.temporal = PlainTime sets the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-time']);
-  const v = await page.evaluate(() => {
-    const el = document.createElement('nova-time');
-    document.body.appendChild(el);
-    el.temporal = Temporal.PlainTime.from('14:30:00');
-    return el.value;
-  });
-  expect(v).toBe('14:30:00Z');
+  expect(v).toBe('2026-040'); // ordinal form of 2026-02-09
 });
 
 test('nova-duration.temporal = Duration sets the value', async ({ page }) => {
@@ -193,23 +166,11 @@ test('nova-datetime.temporal = null clears the value', async ({ page }) => {
   expect(v).toBe('');
 });
 
-test('nova-date.value = "" clears the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-date']);
+test('nova-ordinal-date.value = "" clears the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-ordinal-date']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-date');
-    el.setAttribute('value', '2026-02-09');
-    document.body.appendChild(el);
-    el.value = '';
-    return el.value;
-  });
-  expect(v).toBe('');
-});
-
-test('nova-time.value = "" clears the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-time']);
-  const v = await page.evaluate(() => {
-    const el = document.createElement('nova-time');
-    el.setAttribute('value', '14:30:00Z');
+    const el = document.createElement('nova-ordinal-date');
+    el.setAttribute('value', '2026-040');
     document.body.appendChild(el);
     el.value = '';
     return el.value;
@@ -246,12 +207,8 @@ test('removeAttribute("value") clears nova-datetime', async ({ page }) => {
 const garbageCases = [
   { tag: 'nova-datetime', input: 'not a datetime' },
   { tag: 'nova-datetime', input: '2026-13-01T00:00:00Z' },     // invalid month
-  { tag: 'nova-date',     input: 'not a date' },
-  { tag: 'nova-date',     input: '2026-02-31' },                // Feb has no 31st
   { tag: 'nova-ordinal-date', input: 'not ordinal' },
   { tag: 'nova-ordinal-date', input: '2025-366' },              // 2025 is not a leap year
-  { tag: 'nova-time',     input: 'not a time' },
-  { tag: 'nova-time',     input: '25:00:00Z' },                 // hour out of range
   { tag: 'nova-duration', input: 'not a duration' },
 ];
 
