@@ -2,15 +2,14 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-date.js"></script>
 <script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
 <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
 <nova-temporal-group>
-  <label slot="t0-label">Start (Calendar)</label>
-  <nova-date slot="t0" value="2026-04-09"></nova-date>
-  <label slot="t1-label">End (Ordinal)</label>
+  <label slot="t0-label">Start</label>
+  <nova-ordinal-date slot="t0" value="2026-099"></nova-ordinal-date>
+  <label slot="t1-label">End</label>
   <nova-ordinal-date slot="t1" value="2026-120"></nova-ordinal-date>
   <output slot="output"><span class="output-label">Duration</span><span class="output-value"></span></output>
 </nova-temporal-group>

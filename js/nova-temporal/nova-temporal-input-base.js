@@ -4,8 +4,8 @@
  *
  * Provides the public `temporal` getter/setter, `temporalType` (static and
  * instance), and the `_toTemporal` / `_formatTemporal` protected hooks that
- * concrete temporal widgets (nova-time, nova-date, nova-datetime,
- * nova-ordinal-date, nova-duration) implement.
+ * concrete temporal widgets (nova-datetime, nova-ordinal-date,
+ * nova-duration) implement.
  *
  * Generic segmented inputs (e.g. a future nova-tle) should extend
  * NovaSegmentInputBase directly and skip this layer.
@@ -35,9 +35,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     *
     * Per-subclass type:
     *   <nova-datetime>     → Temporal.Instant
-    *   <nova-date> /
     *   <nova-ordinal-date> → Temporal.PlainDate
-    *   <nova-time>         → Temporal.PlainTime
     *   <nova-duration>     → Temporal.Duration
     *
     * Returns `null` when empty, or — for <nova-ordinal-date> in day-only mode
@@ -167,7 +165,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
    /**
     * Dispatch the shared `precision-truncated` event. Detail uses flat keys
     * `{ smallestUnit, input, parsedRecord }`. Only inputs that expose a
-    * `smallestUnit` getter (nova-time, nova-datetime) emit this.
+    * `smallestUnit` getter (nova-datetime) emit this.
     *
     * @param {string} input the original string that carried excess precision
     * @param {object} parsedRecord the fully-parsed time record (pre-truncation)

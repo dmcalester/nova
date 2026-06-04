@@ -2,15 +2,13 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-date.js"></script>
-<script type="module" src="/js/nova-temporal/nova-time.js"></script>
+<script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
 <script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
 <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
 <form id="chaos-form">
-  <nova-date name="d" required></nova-date>
-  <nova-time name="t" required></nova-time>
+  <nova-ordinal-date name="d" required></nova-ordinal-date>
   <nova-datetime name="dt" required></nova-datetime>
   <nova-datetime name="dt-under" value="2026-01-01T00:00:00Z" min="2026-04-01T00:00:00Z"></nova-datetime>
   <nova-datetime name="dt-over" value="2026-12-31T00:00:00Z" max="2026-04-30T00:00:00Z"></nova-datetime>

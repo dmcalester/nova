@@ -221,11 +221,6 @@ test('parseAnyDatetime: no longer fires datetime-parse-error', async ({ page }) 
   expect(events).not.toContain('datetime-parse-error');
 });
 
-test('parseTimeFlexible: extracts time from datetime string', async ({ page }) => {
-  const r = await call(page, 'parseTimeFlexible', '2026-04-09T14:30:00Z');
-  expect(r).toMatchObject({ hour: 14, minute: 30 });
-});
-
 // ── parseDuration: full Temporal.Duration support ───────────────────────────
 
 test('parseDuration: accepts months ("P1M")', async ({ page }) => {

@@ -509,20 +509,6 @@ export function parseAnyDatetime(str) {
    }
 }
 
-/**
- * Extract a time record from either a bare time string or a full datetime
- * string (splitting on `T`).
- *
- * @param {string} str
- * @returns {TimeRecord|null} null on parse failure
- */
-export function parseTimeFlexible(str) {
-   const direct = parseTime(str);
-   if (direct) return direct;
-   const tIdx = str.indexOf("T");
-   if (tIdx > 0) return parseTime(str.slice(tIdx + 1));
-   return null;
-}
 
 /**
  * Parse a `min`/`max` constraint string into the Temporal type matching a

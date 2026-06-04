@@ -7,8 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 test('form submits correct FormData entries', async ({ page }) => {
   const data = await page.evaluate(() => Object.fromEntries(new FormData(document.querySelector('form'))));
-  expect(data.obs_date).toBe('2026-04-09');
-  expect(data.obs_time).toBe('14:30:00Z');
+  expect(data.obs_date).toBe('2026-099'); // 2026-04-09 in ordinal form
   expect(data.obs_datetime).toBe('2026-04-09T14:30:00Z');
   expect(data.obs_duration).toBeTruthy();
 });
@@ -25,5 +24,5 @@ test('formResetCallback clears value', async ({ page }) => {
   await page.waitForTimeout(50);
   const val = await page.evaluate(() => document.querySelector('[name="obs_date"]').value);
   // After reset, value should return to initial value or empty
-  expect(val === '2026-04-09' || val === '').toBe(true);
+  expect(val === '2026-099' || val === '').toBe(true);
 });

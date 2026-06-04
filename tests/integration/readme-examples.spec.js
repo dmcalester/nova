@@ -84,15 +84,15 @@ test('Form Integration: FormData captures ISO value strings', async ({ page }) =
     const form = document.createElement('form');
     form.id = 'obs-form';
     form.innerHTML = `
-      <nova-date name="obs_date" value="2026-02-09" required></nova-date>
-      <nova-time name="obs_time" smallest-unit="second" value="14:30:00Z"></nova-time>
+      <nova-ordinal-date name="obs_date" value="2026-040" required></nova-ordinal-date>
+      <nova-datetime name="obs_datetime" smallest-unit="second" value="2026-02-09T14:30:00Z"></nova-datetime>
     `;
     document.body.appendChild(form);
     // Wait for both children to upgrade
     let attempts = 0;
     while (
-      (form.querySelector('nova-date').value === undefined ||
-       form.querySelector('nova-time').value === undefined) &&
+      (form.querySelector('nova-ordinal-date').value === undefined ||
+       form.querySelector('nova-datetime').value === undefined) &&
       attempts < 50
     ) {
       await new Promise((r) => setTimeout(r, 10));
@@ -100,7 +100,7 @@ test('Form Integration: FormData captures ISO value strings', async ({ page }) =
     }
     return Object.fromEntries(new FormData(form));
   });
-  expect(r).toEqual({ obs_date: '2026-02-09', obs_time: '14:30:00Z' });
+  expect(r).toEqual({ obs_date: '2026-040', obs_datetime: '2026-02-09T14:30:00Z' });
 });
 
 // ── Mode-specific group examples ────────────────────────────────────────────

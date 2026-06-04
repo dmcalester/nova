@@ -17,11 +17,9 @@ They are not designed for casual booking flows or consumer-facing date pickers. 
 
 | Component | Tag | Description |
 |-----------|-----|-------------|
-| [nova-time](#nova-time) | `<nova-time>` | UTC time input (HH:MM:SS.fffffffffZ) |
-| [nova-date](#nova-date) | `<nova-date>` | Calendar date (YYYY-MM-DD) |
+| [nova-datetime](#nova-datetime) | `<nova-datetime>` | Combined date+time input (Zulu instant) |
 | [nova-ordinal-date](#nova-ordinal-date) | `<nova-ordinal-date>` | Ordinal date (YYYY-DDD) |
 | [nova-duration](#nova-duration) | `<nova-duration>` | ISO 8601 duration (PnYnMnWnDTnHnMnS) |
-| [nova-datetime](#nova-datetime) | `<nova-datetime>` | Combined date+time input |
 | [nova-temporal-group](#nova-temporal-group) | `<nova-temporal-group>` | Generic coordination wrapper for any temporal components |
 | [nova-clock](#nova-clock) | `<nova-clock>` | Live UTC clock display |
 | [nova-elapsed](#nova-elapsed) | `<nova-elapsed>` | Live count-up / count-down display (MET, T-minus) |
@@ -55,7 +53,7 @@ The five input components extend `NovaTemporalInputBase`, which extends the doma
 - Required validation
 - Disabled/readonly states
 
-`NovaTemporalInputBase` adds the typed-value contract: `temporal` getter/setter, `temporalType`, `formatTemporal()`, and the `_toTemporal` / `_formatTemporal` hooks the five widgets implement. Per-subclass `temporal` type: `Temporal.Instant` for `<nova-datetime>`; `Temporal.PlainDate` for the date components; `Temporal.PlainTime` for `<nova-time>`; `Temporal.Duration` for `<nova-duration>`.
+`NovaTemporalInputBase` adds the typed-value contract: `temporal` getter/setter, `temporalType`, `formatTemporal()`, and the `_toTemporal` / `_formatTemporal` hooks the input widgets implement. Per-subclass `temporal` type: `Temporal.Instant` for `<nova-datetime>`; `Temporal.PlainDate` for `<nova-ordinal-date>`; `Temporal.Duration` for `<nova-duration>`.
 
 Design tokens (`--input-*`, `--space-*`, `--font-*`, etc.) inherit from `:root` via CSS custom properties — no duplicate token declarations in shadow DOM.
 
@@ -66,7 +64,7 @@ All input components expose a standard interface for crossing the boundary (ISO 
 | Property | Type | Role |
 |----------|------|------|
 | `value` | string | ISO 8601 boundary value — what HTML attributes carry, what `FormData` returns, what wire protocols consume |
-| `temporal` | Temporal.* \| null | `<nova-datetime>` exposes `Temporal.Instant`. `<nova-date>`/`<nova-ordinal-date>` expose `Temporal.PlainDate`. `<nova-time>` exposes `Temporal.PlainTime`. `<nova-duration>` exposes `Temporal.Duration`. |
+| `temporal` | Temporal.* \| null | `<nova-datetime>` exposes `Temporal.Instant`. `<nova-ordinal-date>` exposes `Temporal.PlainDate`. `<nova-duration>` exposes `Temporal.Duration`. |
 | `temporalType` | string \| null | Type identifier: `'Instant'`, `'PlainDate'`, `'PlainTime'`, `'Duration'`, or `null` when the component is in a configuration that cannot produce a Temporal value (see `<nova-ordinal-date>` day-only mode) |
 | `formatTemporal(t)` | string | Public formatter for converting a Temporal object to this component's ISO value string |
 
@@ -91,73 +89,6 @@ input.temporal = Temporal.Instant.from('2026-02-09T16:00:00Z');
 input.temporal = null;                              // clears
 input.temporal = Temporal.PlainDate.from('2026-02-09');  // throws TypeError
 ```
-
----
-
-## nova-time
-
-UTC/Zulu time input with configurable smallest unit.
-
-### Attributes
-
-| Attribute | Values | Default | Description |
-|-----------|--------|---------|-------------|
-| `value` | ISO time string | — | e.g. `"14:30:00Z"` |
-| `smallest-unit` | `minute` `second` `millisecond` `microsecond` `nanosecond` | `second` | Segment granularity |
-| `name` | string | — | Form field name |
-| `min` | ISO time string | — | Minimum valid value |
-| `max` | ISO time string | — | Maximum valid value |
-| `required` | boolean | — | Value must be provided |
-| `disabled` | boolean | — | Disables input |
-| `readonly` | boolean | — | Prevents editing, allows navigation |
-| `hotkeys` | boolean | — | Enables `n` key (set to now) |
-
-### Value Format
-
-Always UTC with Z suffix: `"14:30:00Z"`, `"14:30:00.123Z"`, `"14:30:00.123456789Z"`
-
-### Example
-
-```html
-<nova-time smallest-unit="millisecond" value="14:30:00.000Z" name="obs_time"></nova-time>
-```
-
-### Paste Behavior
-
-- Native time strings accepted directly
-- Datetime strings: extracts time part (`2026-02-09T14:30:00Z` → `14:30:00Z`)
-
----
-
-## nova-date
-
-Calendar date input with leap year awareness.
-
-### Attributes
-
-| Attribute | Values | Default | Description |
-|-----------|--------|---------|-------------|
-| `value` | ISO date string | — | e.g. `"2026-02-09"` |
-| `name` | string | — | Form field name |
-| `min` | ISO date string | — | Minimum valid value |
-| `max` | ISO date string | — | Maximum valid value |
-| `required` | boolean | — | Value must be provided |
-| `disabled` | boolean | — | Disables input |
-| `readonly` | boolean | — | Prevents editing |
-| `hotkeys` | boolean | — | Enables `n` key (set to now) |
-| `overflow` | `constrain` `reject` | `constrain` | `reject` keeps invalid segment combinations visible and marks the component invalid; default `constrain` clamps to the nearest valid date (matching Temporal's own default) |
-
-### Value Format
-
-`"YYYY-MM-DD"` — e.g. `"2026-02-09"`
-
-By default, invalid segment combinations are clamped to the nearest valid date — matching Temporal's own default. For example, changing `2026-01-31` to February clamps day `31` to `28`. Set `overflow="reject"` to keep the typed value visible and mark the component invalid instead.
-
-### Paste Behavior
-
-- Calendar dates accepted directly
-- Ordinal dates converted (`2026-040` → `2026-02-09`)
-- Datetime strings: extracts date part
 
 ---
 
@@ -302,13 +233,13 @@ The `zone` attribute shifts the displayed wall-clock segments without changing t
 
 ## nova-temporal-group
 
-Generic coordination wrapper for any combination of temporal components. Accepts `nova-datetime`, `nova-date`, `nova-ordinal-date`, `nova-time`, and `nova-duration` in flexible slot configurations. Provides group-level chrome, validation, and auto-computation.
+Generic coordination wrapper for any combination of temporal components. Accepts `nova-datetime`, `nova-ordinal-date`, and `nova-duration` in flexible slot configurations. Provides group-level chrome, validation, and auto-computation.
 
 ### Slot Naming
 
 | Slot pattern | Description |
 |--------------|-------------|
-| `t0`, `t1`, `t2`, ... | Temporal inputs (nova-datetime, nova-date, nova-ordinal-date, nova-time) |
+| `t0`, `t1`, `t2`, ... | Temporal inputs (nova-datetime, nova-ordinal-date) |
 | `d0`, `d1`, `d2`, ... | Duration inputs (nova-duration) |
 | `t0-label`, `d0-label`, ... | Labels for corresponding inputs |
 | `output` | Computed output display |
@@ -384,11 +315,11 @@ By default the group writes an ISO duration in range mode and the computed tempo
 
 ```html
 <nova-temporal-group output-format="interval">
-  <nova-date slot="t0" value="2021-10-10"></nova-date>
-  <nova-date slot="t1" value="2021-10-11"></nova-date>
+  <nova-ordinal-date slot="t0" value="2021-283"></nova-ordinal-date>
+  <nova-ordinal-date slot="t1" value="2021-284"></nova-ordinal-date>
   <output slot="output"><span class="output-value"></span></output>
 </nova-temporal-group>
-<!-- output-value: 2021-10-10/2021-10-11 -->
+<!-- output-value: 2021-283/2021-284 -->
 ```
 
 Endpoints (t0/t1/d0/…) are always submitted as individual FormData entries regardless of `output-format`, so changing the format never loses data — it only changes the human/derived display string.
@@ -400,11 +331,10 @@ Components are grouped into type families:
 | Family | Components | Mixable |
 |--------|-----------|---------|
 | DateTime | `nova-datetime` | Only with itself. Canonical type is `Temporal.Instant`. |
-| Date | `nova-date`, `nova-ordinal-date` | Yes (same underlying type) |
-| Time | `nova-time` | Only with itself |
+| Date | `nova-ordinal-date` | Yes within the family (same underlying type) |
 | Duration | `nova-duration` | N/A (separate role) |
 
-Mixing within the Date family (e.g., `nova-date` + `nova-ordinal-date`) is allowed. Cross-family mixing (e.g., `nova-datetime` + `nova-date`) produces a console warning and validation error.
+Cross-family mixing (e.g., `nova-datetime` + `nova-ordinal-date`) produces a console warning and validation error.
 
 ### Events
 
@@ -467,12 +397,12 @@ Event-detail shape: flat keys when the schema is fixed; nested under a bag key (
 </nova-temporal-group>
 ```
 
-**Date range** — mixing date formats:
+**Date range** — ordinal (day-of-year) endpoints:
 
 ```html
 <nova-temporal-group name="ops-period">
   <label slot="t0-label">Start</label>
-  <nova-date slot="t0" value="2026-02-09"></nova-date>
+  <nova-ordinal-date slot="t0" value="2026-040"></nova-ordinal-date>
   <label slot="t1-label">End</label>
   <nova-ordinal-date slot="t1" value="2026-050"></nova-ordinal-date>
 </nova-temporal-group>
@@ -663,8 +593,8 @@ All input components and `nova-temporal-group` are form-associated custom elemen
 
 ```html
 <form id="obs-form">
-  <nova-date name="obs_date" value="2026-02-09" required></nova-date>
-  <nova-time name="obs_time" smallest-unit="second" value="14:30:00Z"></nova-time>
+  <nova-ordinal-date name="obs_date" value="2026-040" required></nova-ordinal-date>
+  <nova-datetime name="obs_datetime" smallest-unit="second" value="2026-02-09T14:30:00Z"></nova-datetime>
   <button type="submit">Submit</button>
 </form>
 
@@ -672,7 +602,7 @@ All input components and `nova-temporal-group` are form-associated custom elemen
   document.getElementById('obs-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
-    // { obs_date: "2026-02-09", obs_time: "14:30:00Z" }
+    // { obs_date: "2026-040", obs_datetime: "2026-02-09T14:30:00Z" }
   });
 </script>
 ```
@@ -916,8 +846,6 @@ Shared type definitions live at `js/nova-segment-types.js`.
 | `nova-temporal-errors.js` | `setNovaEnv`, `getNovaEnv`, `reportNovaError`. Dispatches `nova-error` events; gates console output by env |
 | `nova-temporal-input-base.js` | Abstract base adding the Temporal-typed-value contract |
 | `nova-temporal-segments.js` | Shared segment descriptor constants and builders |
-| `nova-time.js` | `<nova-time>` component |
-| `nova-date.js` | `<nova-date>` component |
 | `nova-ordinal-date.js` | `<nova-ordinal-date>` component |
 | `nova-duration.js` | `<nova-duration>` component |
 | `nova-datetime.js` | `<nova-datetime>` component |
