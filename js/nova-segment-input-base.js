@@ -1171,10 +1171,11 @@ export class NovaSegmentInputBase extends HTMLElement {
    }
 
    // ── Digit entry ──────────────────────────────────────────────────────────
-   // Auto-advance when the buffered digits can't accept any more without
+   // Commit the buffered digits once they can't accept any more without
    // overflowing the segment's max. Prepending a 0 (nextMin = num * 10) is
    // the cheapest peek at "would another digit still fit?" — if it would
-   // overflow, commit and advance now rather than waiting for the timeout.
+   // overflow, commit now rather than waiting for the timeout. The current
+   // segment stays selected; the user must Tab or arrow to the next segment.
    #handleDigit(idx, digit) {
       const desc = this.activeDescriptors[idx];
       this.#digitBuffer += digit;
@@ -1190,9 +1191,6 @@ export class NovaSegmentInputBase extends HTMLElement {
       if (!couldGrow || willOverflow) {
          this.setSegmentValue(idx, Math.min(num, effectiveMax));
          this.#clearDigitBuffer();
-         if (idx < this.#segments.length - 1) {
-            this.#focusSegment(idx + 1);
-         }
       } else {
          this.setSegmentValue(idx, num);
          clearTimeout(this.#digitTimer);
