@@ -1,5 +1,5 @@
 /**
- * <nova-duration> — ISO 8601 duration input
+ * <nova-input-duration> — ISO 8601 duration input
  *
  * Displays a sliding unit window from largest-unit down to smallest-unit.
  * Defaults to year through second (all standard units visible). Use
@@ -50,7 +50,7 @@ durationLabelSheet.replaceSync(`
    }
 `);
 
-export class NovaDuration extends NovaTemporalInputBase {
+export class NovaInputDuration extends NovaTemporalInputBase {
    #largestUnit = "year";
    #smallestUnit = "second";
    #largestUnitDigits = null;
@@ -183,7 +183,7 @@ export class NovaDuration extends NovaTemporalInputBase {
       const smallestIndex = DURATION_UNIT_ORDER.indexOf(this.#smallestUnit);
       if (largestIndex <= smallestIndex) return;
       throw new RangeError(
-         `nova-duration: largest-unit="${this.#largestUnit}" must not be smaller than smallest-unit="${this.#smallestUnit}"`,
+         `nova-input-duration: largest-unit="${this.#largestUnit}" must not be smaller than smallest-unit="${this.#smallestUnit}"`,
       );
    }
 
@@ -192,7 +192,7 @@ export class NovaDuration extends NovaTemporalInputBase {
       const hidden = this.#hiddenFields(d);
       if (hidden.length === 0) return;
       throw new RangeError(
-         `nova-duration.value: ${inputLabel} contains nonzero units outside largest-unit="${this.#largestUnit}" and smallest-unit="${this.#smallestUnit}": ${hidden.join(", ")}`,
+         `nova-input-duration.value: ${inputLabel} contains nonzero units outside largest-unit="${this.#largestUnit}" and smallest-unit="${this.#smallestUnit}": ${hidden.join(", ")}`,
       );
    }
 
@@ -205,7 +205,7 @@ export class NovaDuration extends NovaTemporalInputBase {
       const d = parseDuration(str);
       if (!d) {
          throw new RangeError(
-            `nova-duration.value: cannot parse "${str}" as ISO 8601 duration`,
+            `nova-input-duration.value: cannot parse "${str}" as ISO 8601 duration`,
          );
       }
       this.#assertVisibleUnitWindow(d, `"${str}"`);
@@ -250,4 +250,4 @@ export class NovaDuration extends NovaTemporalInputBase {
    }
 }
 
-customElements.define("nova-duration", NovaDuration);
+customElements.define("nova-input-duration", NovaInputDuration);

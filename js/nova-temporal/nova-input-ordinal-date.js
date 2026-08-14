@@ -1,5 +1,5 @@
 /**
- * <nova-ordinal-date> — Ordinal date input
+ * <nova-input-ordinal-date> — Ordinal date input
  *
  * DoD "Julian Date" — day of year from 001–365/366.
  *
@@ -44,7 +44,7 @@ function parseDayOnly(str) {
    return val >= 1 && val <= 366 ? val : null;
 }
 
-export class NovaOrdinalDate extends NovaTemporalInputBase {
+export class NovaInputOrdinalDate extends NovaTemporalInputBase {
    // Static = class-level type. Instance getter (below) narrows to null in day-only mode.
    static get temporalType() {
       return "PlainDate";
@@ -120,7 +120,7 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
       const d = strict ? parseOrdinalDate(str) : parseAnyDate(str);
       if (!d) {
          throw new RangeError(
-            `nova-ordinal-date.value: cannot parse "${str}" as ${strict ? "ordinal date" : "date"}`,
+            `nova-input-ordinal-date.value: cannot parse "${str}" as ${strict ? "ordinal date" : "date"}`,
          );
       }
       this.#ensureHasYear();
@@ -166,7 +166,7 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
          this.setAllSegmentValues([dayOnly], true);
          return;
       }
-      throw new RangeError(`nova-ordinal-date.value: cannot parse "${str}" as date`);
+      throw new RangeError(`nova-input-ordinal-date.value: cannot parse "${str}" as date`);
    }
 
    _compareValues(a, b) {
@@ -231,4 +231,4 @@ export class NovaOrdinalDate extends NovaTemporalInputBase {
    }
 }
 
-customElements.define("nova-ordinal-date", NovaOrdinalDate);
+customElements.define("nova-input-ordinal-date", NovaInputOrdinalDate);

@@ -40,15 +40,15 @@ test.describe('DST-bearing zones are structurally rejected', () => {
     expect(code).toBe('invalid-zone');
   });
 
-  test('nova-datetime with IANA zone reports invalid-zone', async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-datetime.html');
+  test('nova-input-datetime with IANA zone reports invalid-zone', async ({ page }) => {
+    await page.goto('/tests/fixtures/nova-input-datetime.html');
     const code = await page.evaluate(async () => {
       return new Promise((resolve) => {
         document.addEventListener('nova-error', (e) => {
           if (e.detail.code === 'invalid-zone') resolve(e.detail.code);
         }, { once: true });
         document.body.innerHTML =
-          '<nova-datetime zone="America/Denver" value="2026-02-09T14:30:00Z"></nova-datetime>';
+          '<nova-input-datetime zone="America/Denver" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
       });
     });
     expect(code).toBe('invalid-zone');

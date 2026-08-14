@@ -1,13 +1,13 @@
 /**
- * <nova-temporal-group> — Generic coordination wrapper for temporal components
+ * <nova-input-temporal-group> — Generic coordination wrapper for temporal components
  *
  * Form-associated custom element that coordinates multiple temporal inputs
- * (nova-datetime, nova-ordinal-date) and duration inputs (nova-duration).
+ * (nova-input-datetime, nova-input-ordinal-date) and duration inputs (nova-input-duration).
  * Provides group-level validation and computed output.
  *
  * Slots:
- *   t0, t1, t2, ... — temporal inputs (any nova-datetime, nova-ordinal-date)
- *   d0, d1, d2, ... — duration inputs (nova-duration)
+ *   t0, t1, t2, ... — temporal inputs (any nova-input-datetime, nova-input-ordinal-date)
+ *   d0, d1, d2, ... — duration inputs (nova-input-duration)
  *   output         — computed output display
  *   (label slots)  — t0-label, t1-label, d0-label, etc.
  *
@@ -16,9 +16,9 @@
  *   - Has d[N] slots → compute mode (output: computed temporal)
  *
  * Type compatibility:
- *   - Instant family: nova-datetime
- *   - PlainDate family: nova-ordinal-date
- *   - Duration: nova-duration
+ *   - Instant family: nova-input-datetime
+ *   - PlainDate family: nova-input-ordinal-date
+ *   - Duration: nova-input-duration
  *   - Cross-family mixing produces a warning
  *
  * Attributes:
@@ -273,7 +273,7 @@ groupSheet.replaceSync(`
   }
 `);
 
-export class NovaTemporalGroup extends HTMLElement {
+export class NovaInputTemporalGroup extends HTMLElement {
    static formAssociated = true;
 
    #internals;
@@ -1545,4 +1545,4 @@ export class NovaTemporalGroup extends HTMLElement {
    }
 }
 
-customElements.define("nova-temporal-group", NovaTemporalGroup);
+customElements.define("nova-input-temporal-group", NovaInputTemporalGroup);

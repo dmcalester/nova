@@ -2,28 +2,28 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-<script type="module" src="/js/nova-temporal/nova-duration.js"></script>
-<script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-datetime.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-duration.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-temporal-group.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
 <fieldset><legend>All Disabled</legend>
-  <nova-datetime value="2026-04-09T14:30:00Z" disabled></nova-datetime>
-  <nova-duration value="PT1H30M" disabled></nova-duration>
-  <nova-temporal-group disabled>
-    <nova-datetime slot="t0" value="2026-04-09T14:00:00Z"></nova-datetime>
-    <nova-duration slot="d0" value="PT1H"></nova-duration>
-    <nova-datetime slot="t1"></nova-datetime>
-  </nova-temporal-group>
+  <nova-input-datetime value="2026-04-09T14:30:00Z" disabled></nova-input-datetime>
+  <nova-input-duration value="PT1H30M" disabled></nova-input-duration>
+  <nova-input-temporal-group disabled>
+    <nova-input-datetime slot="t0" value="2026-04-09T14:00:00Z"></nova-input-datetime>
+    <nova-input-duration slot="d0" value="PT1H"></nova-input-duration>
+    <nova-input-datetime slot="t1"></nova-input-datetime>
+  </nova-input-temporal-group>
 </fieldset>
 <fieldset><legend>All Readonly</legend>
-  <nova-datetime value="2026-04-09T14:30:00Z" readonly></nova-datetime>
-  <nova-duration value="PT1H30M" readonly></nova-duration>
+  <nova-input-datetime value="2026-04-09T14:30:00Z" readonly></nova-input-datetime>
+  <nova-input-duration value="PT1H30M" readonly></nova-input-duration>
 </fieldset>
 <fieldset><legend>Mixed (group disabled, but check children)</legend>
-  <nova-temporal-group disabled>
-    <nova-datetime slot="t0" value="2026-04-09T14:00:00Z"></nova-datetime>
-    <nova-datetime slot="t1" value="2026-04-09T15:00:00Z"></nova-datetime>
-  </nova-temporal-group>
+  <nova-input-temporal-group disabled>
+    <nova-input-datetime slot="t0" value="2026-04-09T14:00:00Z"></nova-input-datetime>
+    <nova-input-datetime slot="t1" value="2026-04-09T15:00:00Z"></nova-input-datetime>
+  </nova-input-temporal-group>
 </fieldset>
 </body></html>

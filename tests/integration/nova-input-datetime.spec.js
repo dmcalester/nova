@@ -2,8 +2,8 @@ import { test, expect } from '../helpers/coverage.js';
 const getVal = (page, sel = '#el') => page.evaluate((s) => document.querySelector(s).value, sel);
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
-  await page.waitForFunction(() => customElements.get('nova-datetime') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
+  await page.waitForFunction(() => customElements.get('nova-input-datetime') !== undefined);
 });
 
 test('initial value round-trips in calendar format', async ({ page }) => {
@@ -58,7 +58,7 @@ test('paste of a valid but out-of-range datetime reports a range error, not "mal
   // fine but was reported as "Pasted text is malformed" — misleading. It is
   // out of range, not malformed.
   const detail = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('max', '2026-04-20T00:00:00Z');
     el.setAttribute('value', '2026-04-09T14:30:00Z');
     document.body.appendChild(el);
@@ -119,7 +119,7 @@ test('datetime edit clamps day by default (constrain)', async ({ page }) => {
 
 test('overflow="reject" preserves invalid date fields and marks invalid', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('overflow', 'reject');
     el.setAttribute('value', '2026-01-31T14:30:00Z');
     document.body.append(el);
@@ -158,41 +158,41 @@ test('value below min sets rangeUnderflow', async ({ page }) => {
   expect(v.rangeUnderflow).toBe(true);
 });
 
-test('nova-datetime: temporal getter returns Temporal.Instant', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: temporal getter returns Temporal.Instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const isInstant = await page.evaluate(() => {
-    document.body.innerHTML = '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+    document.body.innerHTML = '<nova-input-datetime value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     return el.temporal instanceof Temporal.Instant;
   });
   expect(isInstant).toBe(true);
 });
 
-test('nova-datetime: temporal setter accepts Temporal.Instant', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: temporal setter accepts Temporal.Instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const value = await page.evaluate(() => {
-    document.body.innerHTML = '<nova-datetime></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+    document.body.innerHTML = '<nova-input-datetime></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     el.temporal = Temporal.Instant.from('2026-02-09T14:30:00Z');
     return el.value;
   });
   expect(value).toBe('2026-02-09T14:30:00Z');
 });
 
-test('nova-datetime: temporalType is "Instant"', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: temporalType is "Instant"', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const type = await page.evaluate(() => {
-    document.body.innerHTML = '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
-    return document.querySelector('nova-datetime').temporalType;
+    document.body.innerHTML = '<nova-input-datetime value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    return document.querySelector('nova-input-datetime').temporalType;
   });
   expect(type).toBe('Instant');
 });
 
-test('nova-datetime: temporal setter rejects PlainDateTime with TypeError', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: temporal setter rejects PlainDateTime with TypeError', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const msg = await page.evaluate(() => {
-    document.body.innerHTML = '<nova-datetime></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+    document.body.innerHTML = '<nova-input-datetime></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     try {
       el.temporal = Temporal.PlainDateTime.from('2026-02-09T14:30:00');
       return null;
@@ -203,11 +203,11 @@ test('nova-datetime: temporal setter rejects PlainDateTime with TypeError', asyn
   expect(msg).toMatch(/Instant/);
 });
 
-test('nova-datetime: setting value with unzoned string throws', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: setting value with unzoned string throws', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const threw = await page.evaluate(() => {
-    document.body.innerHTML = '<nova-datetime></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+    document.body.innerHTML = '<nova-input-datetime></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     try {
       el.value = '2026-02-09T14:30:00';
       return false;
@@ -218,34 +218,34 @@ test('nova-datetime: setting value with unzoned string throws', async ({ page })
   expect(threw).toBe(true);
 });
 
-test('nova-datetime: zone="-05:00" preserves canonical instant', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: zone="-05:00" preserves canonical instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const temporalISO = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+      '<nova-input-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     return el.temporal.toString();
   });
   expect(temporalISO).toBe('2026-02-09T14:30:00Z');
 });
 
-test('nova-datetime: zone="-05:00" shifts displayed segments back five hours', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: zone="-05:00" shifts displayed segments back five hours', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const hour = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+      '<nova-input-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     return el.getSegmentValueByName('hour');
   });
   expect(hour).toBe(9);
 });
 
-test('nova-datetime: zone change preserves canonical instant', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: zone change preserves canonical instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const result = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime value="2026-02-09T14:30:00Z"></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+      '<nova-input-datetime value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     const before = el.temporal.epochNanoseconds.toString();
     el.setAttribute('zone', '-05:00');
     const after = el.temporal.epochNanoseconds.toString();
@@ -254,26 +254,26 @@ test('nova-datetime: zone change preserves canonical instant', async ({ page }) 
   expect(result.before).toBe(result.after);
 });
 
-test('nova-datetime: IANA zone reports invalid-zone', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: IANA zone reports invalid-zone', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const code = await page.evaluate(async () => {
     return new Promise((resolve) => {
       document.addEventListener('nova-error', (e) => {
         if (e.detail.code === 'invalid-zone') resolve(e.detail.code);
       }, { once: true });
       document.body.innerHTML =
-        '<nova-datetime zone="America/Denver" value="2026-02-09T14:30:00Z"></nova-datetime>';
+        '<nova-input-datetime zone="America/Denver" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
     });
   });
   expect(code).toBe('invalid-zone');
 });
 
-test('nova-datetime: editing a segment in non-UTC zone recomposes correct instant', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: editing a segment in non-UTC zone recomposes correct instant', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const iso = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
-    const el = document.querySelector('nova-datetime');
+      '<nova-input-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    const el = document.querySelector('nova-input-datetime');
     // Display reads 09:30 in -05:00. Nudge minute from 30 to 31 (display 09:31 = 14:31Z).
     el.setSegmentValueByName('minute', 31, true);
     return el.temporal.toString();
@@ -281,43 +281,43 @@ test('nova-datetime: editing a segment in non-UTC zone recomposes correct instan
   expect(iso).toBe('2026-02-09T14:31:00Z');
 });
 
-test('nova-datetime: value-format="offset" emits with configured offset', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: value-format="offset" emits with configured offset', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const value = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime zone="-05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
-    return document.querySelector('nova-datetime').value;
+      '<nova-input-datetime zone="-05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    return document.querySelector('nova-input-datetime').value;
   });
   expect(value).toBe('2026-02-09T09:30:00-05:00');
 });
 
-test('nova-datetime: value-format="z" (default) emits Z form regardless of zone', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: value-format="z" (default) emits Z form regardless of zone', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const value = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-datetime>';
-    return document.querySelector('nova-datetime').value;
+      '<nova-input-datetime zone="-05:00" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    return document.querySelector('nova-input-datetime').value;
   });
   expect(value).toBe('2026-02-09T14:30:00Z');
 });
 
-test('nova-datetime: offset emission omits [zone] bracket', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: offset emission omits [zone] bracket', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const value = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime zone="+05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
-    return document.querySelector('nova-datetime').value;
+      '<nova-input-datetime zone="+05:00" value-format="offset" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    return document.querySelector('nova-input-datetime').value;
   });
   expect(value).toBe('2026-02-09T19:30:00+05:00');
   expect(value).not.toContain('[');
 });
 
-test('nova-datetime: value-format="offset" with UTC zone uses +00:00 suffix', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+test('nova-input-datetime: value-format="offset" with UTC zone uses +00:00 suffix', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
   const value = await page.evaluate(() => {
     document.body.innerHTML =
-      '<nova-datetime value-format="offset" value="2026-02-09T14:30:00Z"></nova-datetime>';
-    return document.querySelector('nova-datetime').value;
+      '<nova-input-datetime value-format="offset" value="2026-02-09T14:30:00Z"></nova-input-datetime>';
+    return document.querySelector('nova-input-datetime').value;
   });
   expect(value).toBe('2026-02-09T14:30:00+00:00');
 });

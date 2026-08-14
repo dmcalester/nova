@@ -1,8 +1,8 @@
 /**
  * nova-temporal-segments.js — Shared segment descriptors for temporal components
  *
- * Single source of truth for segment definitions used by nova-ordinal-date
- * and nova-datetime.
+ * Single source of truth for segment definitions used by nova-input-ordinal-date
+ * and nova-input-datetime.
  */
 
 import {
@@ -193,7 +193,7 @@ export function normalizeDurationUnit(unit, fallback) {
 // MET/GET lineage): only the largest visible unit overflows. Days get 3
 // digits (the DDD/HH:MM:SS pattern); year/month and hour/minute/second
 // stay at their natural 2-digit width. Authors who need to widen the largest
-// visible unit pass `largest-unit-digits` to <nova-duration>, which threads
+// visible unit pass `largest-unit-digits` to <nova-input-duration>, which threads
 // through to buildDurationDescriptors below.
 //
 // labelAfter is filled in by buildDurationDescriptors() — ISO-8601 designators

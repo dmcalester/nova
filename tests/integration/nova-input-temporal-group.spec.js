@@ -1,13 +1,13 @@
 import { test, expect } from '../helpers/coverage.js';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-range.html');
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-temporal-group-range.html');
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
 });
 
 test('range mode: formattedValue is populated after load', async ({ page }) => {
   await page.waitForTimeout(100);
-  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').formattedValue);
+  const out = await page.evaluate(() => document.querySelector('nova-input-temporal-group').formattedValue);
   expect(out).toBeTruthy();
 });
 
@@ -22,7 +22,7 @@ test('range mode: t1 < t0 is valid and produces a negative duration', async ({ p
   });
   await page.waitForTimeout(100);
   const { valid, output, hasInvalidAttr } = await page.evaluate(() => {
-    const group = document.querySelector('nova-temporal-group');
+    const group = document.querySelector('nova-input-temporal-group');
     return {
       valid: group.checkValidity(),
       output: group.formattedValue,
@@ -37,8 +37,8 @@ test('range mode: t1 < t0 is valid and produces a negative duration', async ({ p
 test('range mode: single temporal slot is invalid configuration', async ({ page }) => {
   const result = await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       group.append(t0);
       document.body.append(group);
@@ -57,17 +57,17 @@ test('range mode: single temporal slot is invalid configuration', async ({ page 
 });
 
 test('compute mode: formattedValue reflects t0 + d0 result', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
   await page.waitForTimeout(200);
   // formattedValue is computed fresh from t0.temporal + d0.temporal
-  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').formattedValue);
+  const out = await page.evaluate(() => document.querySelector('nova-input-temporal-group').formattedValue);
   expect(out).toBe('2026-04-09T16:00:00Z');
 });
 
 test('compute mode: output updates when duration changes', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
   await page.waitForTimeout(200);
   await page.evaluate(() => {
     const d0 = document.querySelector('[slot="d0"]');
@@ -75,23 +75,23 @@ test('compute mode: output updates when duration changes', async ({ page }) => {
     d0.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await page.waitForTimeout(100);
-  const out = await page.evaluate(() => document.querySelector('nova-temporal-group').formattedValue);
+  const out = await page.evaluate(() => document.querySelector('nova-input-temporal-group').formattedValue);
   expect(out).toBe('2026-04-09T17:00:00Z');
 });
 
 test('compute mode: missing t0 is invalid configuration', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
 
   const result = await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
+      const group = document.createElement('nova-input-temporal-group');
 
-      const d0 = document.createElement('nova-duration');
+      const d0 = document.createElement('nova-input-duration');
       d0.slot = 'd0';
       d0.value = 'PT1H';
 
-      const d1 = document.createElement('nova-duration');
+      const d1 = document.createElement('nova-input-duration');
       d1.slot = 'd1';
       d1.value = 'PT30M';
 
@@ -133,7 +133,7 @@ test('temporal-change event fires when child changes', async ({ page }) => {
   const fired = await page.evaluate(() => {
     return new Promise((resolve) => {
       const timeout = setTimeout(() => resolve(false), 2000);
-      document.querySelector('nova-temporal-group').addEventListener('temporal-change', () => {
+      document.querySelector('nova-input-temporal-group').addEventListener('temporal-change', () => {
         clearTimeout(timeout);
         resolve(true);
       }, { once: true });
@@ -155,7 +155,7 @@ test('range mode: child-invalid message uses slotted label text when present', a
   });
   await page.waitForTimeout(100);
   const message = await page.evaluate(() => {
-    const group = document.querySelector('nova-temporal-group');
+    const group = document.querySelector('nova-input-temporal-group');
     group.checkValidity();
     return group.validationMessage;
   });
@@ -166,12 +166,12 @@ test('range mode: child-invalid message uses slotted label text when present', a
 test('range mode: child-invalid message falls back to slot name when no label is slotted', async ({ page }) => {
   const message = await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       t0.setAttribute('min', '2026-04-09T16:00:00Z');
       t0.setAttribute('value', '2026-04-09T14:00:00Z');
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       t1.setAttribute('value', '2026-04-09T18:00:00Z');
       group.append(t0, t1);
@@ -193,11 +193,11 @@ test('output slot: warns when slotted element is not <output>', async ({ page })
 
   await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       t0.setAttribute('value', '2026-04-09T14:00:00Z');
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       t1.setAttribute('value', '2026-04-09T15:00:00Z');
       const out = document.createElement('div');
@@ -212,7 +212,7 @@ test('output slot: warns when slotted element is not <output>', async ({ page })
   });
   await page.waitForTimeout(50);
 
-  const matching = warnings.filter(w => w.includes('[nova-temporal-group]') && w.includes('should be an <output>'));
+  const matching = warnings.filter(w => w.includes('[nova-input-temporal-group]') && w.includes('should be an <output>'));
   expect(matching.length).toBe(1);
 });
 
@@ -224,11 +224,11 @@ test('output slot: warns when <output> is missing .output-value descendant', asy
 
   await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       t0.setAttribute('value', '2026-04-09T14:00:00Z');
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       t1.setAttribute('value', '2026-04-09T15:00:00Z');
       const out = document.createElement('output');
@@ -244,7 +244,7 @@ test('output slot: warns when <output> is missing .output-value descendant', asy
   });
   await page.waitForTimeout(50);
 
-  const matching = warnings.filter(w => w.includes('[nova-temporal-group]') && w.includes('is missing a .output-value'));
+  const matching = warnings.filter(w => w.includes('[nova-input-temporal-group]') && w.includes('is missing a .output-value'));
   expect(matching.length).toBe(1);
 });
 
@@ -254,11 +254,11 @@ test('output slot: well-formed slot does not warn', async ({ page }) => {
     if (msg.type() === 'warning') warnings.push(msg.text());
   });
 
-  await page.goto('/tests/fixtures/nova-temporal-group-range.html');
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-temporal-group-range.html');
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
   await page.waitForTimeout(100);
 
-  const matching = warnings.filter(w => w.includes('[nova-temporal-group]') && (w.includes('<output>') || w.includes('.output-value')));
+  const matching = warnings.filter(w => w.includes('[nova-input-temporal-group]') && (w.includes('<output>') || w.includes('.output-value')));
   expect(matching.length).toBe(0);
 });
 
@@ -270,11 +270,11 @@ test('output slot: absent slot does not warn (headless configuration)', async ({
 
   await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       t0.setAttribute('value', '2026-04-09T14:00:00Z');
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       t1.setAttribute('value', '2026-04-09T15:00:00Z');
       group.append(t0, t1);
@@ -284,7 +284,7 @@ test('output slot: absent slot does not warn (headless configuration)', async ({
   });
   await page.waitForTimeout(50);
 
-  const matching = warnings.filter(w => w.includes('[nova-temporal-group]') && (w.includes('<output>') || w.includes('.output-value')));
+  const matching = warnings.filter(w => w.includes('[nova-input-temporal-group]') && (w.includes('<output>') || w.includes('.output-value')));
   expect(matching.length).toBe(0);
 });
 
@@ -296,11 +296,11 @@ test('output slot: warn fires at most once per assigned element across re-attach
 
   await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       t0.setAttribute('value', '2026-04-09T14:00:00Z');
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       t1.setAttribute('value', '2026-04-09T15:00:00Z');
       const out = document.createElement('output');
@@ -321,7 +321,7 @@ test('output slot: warn fires at most once per assigned element across re-attach
   });
   await page.waitForTimeout(50);
 
-  const matching = warnings.filter(w => w.includes('[nova-temporal-group]') && w.includes('is missing a .output-value'));
+  const matching = warnings.filter(w => w.includes('[nova-input-temporal-group]') && w.includes('is missing a .output-value'));
   expect(matching.length).toBe(1);
 });
 
@@ -333,11 +333,11 @@ test('output slot: warn fires again when a different element is assigned', async
 
   await page.evaluate(() => {
     return new Promise((resolve) => {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       t0.setAttribute('value', '2026-04-09T14:00:00Z');
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       t1.setAttribute('value', '2026-04-09T15:00:00Z');
       const out1 = document.createElement('output');
@@ -356,24 +356,24 @@ test('output slot: warn fires again when a different element is assigned', async
   });
   await page.waitForTimeout(50);
 
-  const matching = warnings.filter(w => w.includes('[nova-temporal-group]') && w.includes('is missing a .output-value'));
+  const matching = warnings.filter(w => w.includes('[nova-input-temporal-group]') && w.includes('is missing a .output-value'));
   expect(matching.length).toBe(2);
 });
 
 async function buildComputeGroup(page, anchorTag, anchorValue, durationValue, durationAttrs = {}) {
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
   await page.evaluate(async ({ anchorTag, anchorValue, durationValue, durationAttrs }) => {
     if (!customElements.get(anchorTag)) {
       await import(`/js/nova-temporal/${anchorTag}.js`);
       await customElements.whenDefined(anchorTag);
     }
-    const group = document.createElement('nova-temporal-group');
+    const group = document.createElement('nova-input-temporal-group');
     group.id = 'fixture-group';
     const t0 = document.createElement(anchorTag);
     t0.slot = 't0';
     t0.setAttribute('value', anchorValue);
-    const d0 = document.createElement('nova-duration');
+    const d0 = document.createElement('nova-input-duration');
     d0.slot = 'd0';
     for (const [name, value] of Object.entries(durationAttrs)) {
       d0.setAttribute(name, value);
@@ -397,21 +397,21 @@ async function buildComputeGroup(page, anchorTag, anchorValue, durationValue, du
 }
 
 test('compute mode: PlainDate anchor + sub-day duration is invalid (F7)', async ({ page }) => {
-  // nova-ordinal-date in year mode (2026-040 = day-of-year 40) is PlainDate-typed.
-  const result = await buildComputeGroup(page, 'nova-ordinal-date', '2026-040', 'PT25H');
+  // nova-input-ordinal-date in year mode (2026-040 = day-of-year 40) is PlainDate-typed.
+  const result = await buildComputeGroup(page, 'nova-input-ordinal-date', '2026-040', 'PT25H');
   expect(result.valid).toBe(false);
   expect(result.message).toContain('date anchor');
   expect(result.output).toBe('');
 });
 
 test('compute mode: PlainDate anchor + day-only duration stays valid (F7 negative)', async ({ page }) => {
-  const result = await buildComputeGroup(page, 'nova-ordinal-date', '2026-040', 'P3D');
+  const result = await buildComputeGroup(page, 'nova-input-ordinal-date', '2026-040', 'P3D');
   expect(result.valid).toBe(true);
   expect(result.output).toBe('2026-043'); // 2026-02-09 + 3d = 2026-02-12 (day 43)
 });
 
 test('compute mode: PlainDate anchor accepts calendar-unit duration where Temporal permits', async ({ page }) => {
-  const result = await buildComputeGroup(page, 'nova-ordinal-date', '2026-040', 'P1M', {
+  const result = await buildComputeGroup(page, 'nova-input-ordinal-date', '2026-040', 'P1M', {
     'largest-unit': 'month',
   });
   expect(result.valid).toBe(true);
@@ -420,10 +420,10 @@ test('compute mode: PlainDate anchor accepts calendar-unit duration where Tempor
 
 test('empty child makes group invalid (valueMissing) regardless of required attribute', async ({ page }) => {
   const r = await page.evaluate(async () => {
-    const group = document.createElement('nova-temporal-group');
-    const t0 = document.createElement('nova-datetime');
+    const group = document.createElement('nova-input-temporal-group');
+    const t0 = document.createElement('nova-input-datetime');
     t0.slot = 't0';
-    const t1 = document.createElement('nova-datetime');
+    const t1 = document.createElement('nova-input-datetime');
     t1.slot = 't1';
     const out = document.createElement('output');
     out.slot = 'output';
@@ -446,10 +446,10 @@ test('empty child makes group invalid (valueMissing) regardless of required attr
 
 test('output stays visible and shows "Invalid" while incomplete, then resolves once filled', async ({ page }) => {
   const r = await page.evaluate(async () => {
-    const group = document.createElement('nova-temporal-group');
-    const t0 = document.createElement('nova-datetime');
+    const group = document.createElement('nova-input-temporal-group');
+    const t0 = document.createElement('nova-input-datetime');
     t0.slot = 't0';
-    const t1 = document.createElement('nova-datetime');
+    const t1 = document.createElement('nova-input-datetime');
     t1.slot = 't1';
     const out = document.createElement('output');
     out.slot = 'output';
@@ -486,13 +486,13 @@ test('output stays visible and shows "Invalid" while incomplete, then resolves o
 test('group with initial output exceeding max starts as invalid (user-interacted at init)', async ({ page }) => {
   // Range mode with min/max on the group: t1 - t0 = 5h, but max="PT1H".
   const r = await page.evaluate(async () => {
-    const group = document.createElement('nova-temporal-group');
+    const group = document.createElement('nova-input-temporal-group');
     group.setAttribute('min', 'PT0S');
     group.setAttribute('max', 'PT1H');
-    const t0 = document.createElement('nova-datetime');
+    const t0 = document.createElement('nova-input-datetime');
     t0.slot = 't0';
     t0.setAttribute('value', '2026-04-09T10:00:00Z');
-    const t1 = document.createElement('nova-datetime');
+    const t1 = document.createElement('nova-input-datetime');
     t1.slot = 't1';
     t1.setAttribute('value', '2026-04-09T15:00:00Z');
     const out = document.createElement('output');
@@ -517,10 +517,10 @@ test('group with initial output exceeding max starts as invalid (user-interacted
 
 test('group with empty children does NOT start in user-invalid state', async ({ page }) => {
   const r = await page.evaluate(async () => {
-    const group = document.createElement('nova-temporal-group');
-    const t0 = document.createElement('nova-datetime');
+    const group = document.createElement('nova-input-temporal-group');
+    const t0 = document.createElement('nova-input-datetime');
     t0.slot = 't0';
-    const t1 = document.createElement('nova-datetime');
+    const t1 = document.createElement('nova-input-datetime');
     t1.slot = 't1';
     const out = document.createElement('output');
     out.slot = 'output';
@@ -542,17 +542,17 @@ test('group with empty children does NOT start in user-invalid state', async ({ 
 
 test('row label gets [data-invalid] when its child is empty after user interaction', async ({ page }) => {
   const r = await page.evaluate(async () => {
-    const group = document.createElement('nova-temporal-group');
+    const group = document.createElement('nova-input-temporal-group');
     const labelT0 = document.createElement('label');
     labelT0.slot = 't0-label';
     labelT0.textContent = 'Start';
-    const t0 = document.createElement('nova-datetime');
+    const t0 = document.createElement('nova-input-datetime');
     t0.slot = 't0';
     t0.setAttribute('value', '2026-04-09T14:00:00Z');
     const labelT1 = document.createElement('label');
     labelT1.slot = 't1-label';
     labelT1.textContent = 'End';
-    const t1 = document.createElement('nova-datetime');
+    const t1 = document.createElement('nova-input-datetime');
     t1.slot = 't1';
     // t1 is intentionally empty
     const out = document.createElement('output');
@@ -593,12 +593,12 @@ test('group: bad min attribute fires nova-error and sets customError validity', 
     const events = [];
     document.addEventListener('nova-error', (e) => events.push(e.detail));
 
-    const group = document.createElement('nova-temporal-group');
+    const group = document.createElement('nova-input-temporal-group');
     group.setAttribute('min', 'P1Z'); // unparseable duration
-    const t0 = document.createElement('nova-datetime');
+    const t0 = document.createElement('nova-input-datetime');
     t0.slot = 't0';
     t0.setAttribute('value', '2026-04-09T10:00:00Z');
-    const t1 = document.createElement('nova-datetime');
+    const t1 = document.createElement('nova-input-datetime');
     t1.slot = 't1';
     t1.setAttribute('value', '2026-04-09T15:00:00Z');
     const out = document.createElement('output');
@@ -625,27 +625,27 @@ test('group: bad min attribute fires nova-error and sets customError validity', 
 test('group: compute throw sets customError and shows "Invalid", validity matches output', async ({ page }) => {
   // Jan 31 + P1M with overflow:"reject" throws because Feb 31 doesn't exist —
   // a deterministic compute-error trigger.
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
 
   const r = await page.evaluate(async () => {
     const events = [];
     document.addEventListener('nova-error', (e) => events.push(e.detail));
 
-    if (!customElements.get('nova-ordinal-date')) {
-      await import('/js/nova-temporal/nova-ordinal-date.js');
-      await customElements.whenDefined('nova-ordinal-date');
+    if (!customElements.get('nova-input-ordinal-date')) {
+      await import('/js/nova-temporal/nova-input-ordinal-date.js');
+      await customElements.whenDefined('nova-input-ordinal-date');
     }
-    if (!customElements.get('nova-duration')) {
-      await import('/js/nova-temporal/nova-duration.js');
-      await customElements.whenDefined('nova-duration');
+    if (!customElements.get('nova-input-duration')) {
+      await import('/js/nova-temporal/nova-input-duration.js');
+      await customElements.whenDefined('nova-input-duration');
     }
 
-    const group = document.createElement('nova-temporal-group');
-    const t0 = document.createElement('nova-ordinal-date');
+    const group = document.createElement('nova-input-temporal-group');
+    const t0 = document.createElement('nova-input-ordinal-date');
     t0.slot = 't0';
     t0.setAttribute('value', '2026-031'); // Jan 31 in ordinal form
-    const d0 = document.createElement('nova-duration');
+    const d0 = document.createElement('nova-input-duration');
     d0.slot = 'd0';
     d0.setAttribute('largest-unit', 'month');
     d0.setAttribute('value', 'P1M');
@@ -683,10 +683,10 @@ test('child paste error: nova-error event bubbles to group, no alert is called',
     window.alert = () => { alertCalled = true; };
 
     try {
-      const group = document.createElement('nova-temporal-group');
-      const t0 = document.createElement('nova-datetime');
+      const group = document.createElement('nova-input-temporal-group');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       const out = document.createElement('output');
       out.slot = 'output';
@@ -722,12 +722,12 @@ test('production env: console output is the canonical sentence; event detail is 
     document.addEventListener('nova-error', (e) => events.push(e.detail));
 
     try {
-      const group = document.createElement('nova-temporal-group');
+      const group = document.createElement('nova-input-temporal-group');
       group.setAttribute('min', 'P1Z'); // bad
-      const t0 = document.createElement('nova-datetime');
+      const t0 = document.createElement('nova-input-datetime');
       t0.slot = 't0';
       t0.setAttribute('value', '2026-04-09T10:00:00Z');
-      const t1 = document.createElement('nova-datetime');
+      const t1 = document.createElement('nova-input-datetime');
       t1.slot = 't1';
       t1.setAttribute('value', '2026-04-09T15:00:00Z');
       const out = document.createElement('output');
@@ -758,8 +758,8 @@ test('production env: console output is the canonical sentence; event detail is 
 
 test.describe('form submission (fieldset semantics)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-form.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-form.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(150);
   });
 
@@ -813,8 +813,8 @@ test.describe('form submission (fieldset semantics)', () => {
 
 test.describe('output-format', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-range.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-range.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(50);
   });
 
@@ -869,16 +869,16 @@ test.describe('output-format', () => {
   });
 
   test('compute mode: defaults to end (computed temporal)', async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(150);
     const out = await page.evaluate(() => document.getElementById('group').formattedValue);
     expect(out).toBe('2026-04-09T16:00:00Z');
   });
 
   test('compute mode: format=duration returns sum of durations', async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(150);
     const out = await page.evaluate(() => {
       const g = document.getElementById('group');
@@ -889,8 +889,8 @@ test.describe('output-format', () => {
   });
 
   test('compute mode: format=interval returns t0/computed', async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(150);
     const out = await page.evaluate(() => {
       const g = document.getElementById('group');
@@ -901,8 +901,8 @@ test.describe('output-format', () => {
   });
 
   test('compute mode: format=start-duration uses summed durations', async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(150);
     const out = await page.evaluate(() => {
       const g = document.getElementById('group');
@@ -913,8 +913,8 @@ test.describe('output-format', () => {
   });
 
   test('compute mode: format=duration-end uses summed durations and computed end', async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(150);
     const out = await page.evaluate(() => {
       const g = document.getElementById('group');
@@ -925,11 +925,11 @@ test.describe('output-format', () => {
   });
 
   test('endpoints survive in FormData regardless of output-format', async ({ page }) => {
-    await page.goto('/tests/fixtures/nova-temporal-group-form.html');
-    await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+    await page.goto('/tests/fixtures/nova-input-temporal-group-form.html');
+    await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
     await page.waitForTimeout(150);
     const map = await page.evaluate(() => {
-      const g = document.querySelector('#form-range nova-temporal-group');
+      const g = document.querySelector('#form-range nova-input-temporal-group');
       g.outputFormat = 'interval';
       return Object.fromEntries(new FormData(document.getElementById('form-range')));
     });
@@ -960,7 +960,7 @@ test.describe('output-format', () => {
 // ── Instant t0 calendar-unit guard ──────────────────────────────────────────
 
 test('group: compute mode rejects P1D duration on Instant t0', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
   const result = await page.evaluate(async () => {
     return new Promise((resolve) => {
       document.addEventListener('nova-error', (e) => {
@@ -969,7 +969,7 @@ test('group: compute mode rejects P1D duration on Instant t0', async ({ page }) 
           // Defer validity read: setValidity runs after #computeOutputValue
           // returns (later in the same rAF callback), so we need a microtask.
           Promise.resolve().then(() => {
-            const g = document.querySelector('nova-temporal-group');
+            const g = document.querySelector('nova-input-temporal-group');
             resolve({
               code,
               invalid: g.validity.customError === true,
@@ -978,10 +978,10 @@ test('group: compute mode rejects P1D duration on Instant t0', async ({ page }) 
         }
       }, { once: true });
       document.body.innerHTML = `
-        <nova-temporal-group>
-          <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
-          <nova-duration slot="d0" value="P1D"></nova-duration>
-        </nova-temporal-group>`;
+        <nova-input-temporal-group>
+          <nova-input-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-input-datetime>
+          <nova-input-duration slot="d0" value="P1D"></nova-input-duration>
+        </nova-input-temporal-group>`;
     });
   });
   expect(result.code).toBe('compute-error');
@@ -989,17 +989,17 @@ test('group: compute mode rejects P1D duration on Instant t0', async ({ page }) 
 });
 
 test('group: compute mode accepts PT24H duration on Instant t0', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
   const computed = await page.evaluate(() => {
     document.body.innerHTML = `
-      <nova-temporal-group>
-        <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
-        <nova-duration slot="d0" value="PT24H"></nova-duration>
+      <nova-input-temporal-group>
+        <nova-input-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-input-datetime>
+        <nova-input-duration slot="d0" value="PT24H"></nova-input-duration>
         <output slot="output"><span class="output-value"></span></output>
-      </nova-temporal-group>`;
+      </nova-input-temporal-group>`;
     return new Promise((resolve) =>
       requestAnimationFrame(() => {
-        const g = document.querySelector('nova-temporal-group');
+        const g = document.querySelector('nova-input-temporal-group');
         resolve({
           formatted: g.formattedValue,
           invalid: g.validity.customError === true,
@@ -1012,34 +1012,34 @@ test('group: compute mode accepts PT24H duration on Instant t0', async ({ page }
 });
 
 test('group: compute mode rejects P1Y on Instant t0', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-compute.html');
+  await page.goto('/tests/fixtures/nova-input-temporal-group-compute.html');
   const code = await page.evaluate(async () => {
     return new Promise((resolve) => {
       document.addEventListener('nova-error', (e) => {
         if (e.detail.code === 'compute-error') resolve(e.detail.code);
       }, { once: true });
       document.body.innerHTML = `
-        <nova-temporal-group>
-          <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
-          <nova-duration slot="d0" value="P1Y"></nova-duration>
-        </nova-temporal-group>`;
+        <nova-input-temporal-group>
+          <nova-input-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-input-datetime>
+          <nova-input-duration slot="d0" value="P1Y"></nova-input-duration>
+        </nova-input-temporal-group>`;
     });
   });
   expect(code).toBe('compute-error');
 });
 
-test('group: range mode between two nova-datetime returns Duration', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-temporal-group-range.html');
+test('group: range mode between two nova-input-datetime returns Duration', async ({ page }) => {
+  await page.goto('/tests/fixtures/nova-input-temporal-group-range.html');
   const dur = await page.evaluate(() => {
     document.body.innerHTML = `
-      <nova-temporal-group>
-        <nova-datetime slot="t0" value="2026-02-09T14:00:00Z"></nova-datetime>
-        <nova-datetime slot="t1" value="2026-02-09T15:30:00Z"></nova-datetime>
+      <nova-input-temporal-group>
+        <nova-input-datetime slot="t0" value="2026-02-09T14:00:00Z"></nova-input-datetime>
+        <nova-input-datetime slot="t1" value="2026-02-09T15:30:00Z"></nova-input-datetime>
         <output slot="output"><span class="output-value"></span></output>
-      </nova-temporal-group>`;
+      </nova-input-temporal-group>`;
     return new Promise((resolve) =>
       requestAnimationFrame(() => {
-        resolve(document.querySelector('nova-temporal-group').formattedValue);
+        resolve(document.querySelector('nova-input-temporal-group').formattedValue);
       })
     );
   });

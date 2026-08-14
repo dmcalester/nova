@@ -2,18 +2,18 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-<script type="module" src="/js/nova-temporal/nova-duration.js"></script>
-<script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-datetime.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-duration.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-temporal-group.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
-<nova-duration value="PT0S" min="PT0S"></nova-duration>
-<nova-duration value="P999DT23H59M59.999999999S" smallest-unit="nanosecond"></nova-duration>
+<nova-input-duration value="PT0S" min="PT0S"></nova-input-duration>
+<nova-input-duration value="P999DT23H59M59.999999999S" smallest-unit="nanosecond"></nova-input-duration>
 <!-- compute group that lands exactly on midnight -->
-<nova-temporal-group>
-  <nova-datetime slot="t0" value="2026-04-09T23:00:00Z"></nova-datetime>
-  <nova-duration slot="d0" value="PT1H"></nova-duration>
-  <nova-datetime slot="t1"></nova-datetime>
+<nova-input-temporal-group>
+  <nova-input-datetime slot="t0" value="2026-04-09T23:00:00Z"></nova-input-datetime>
+  <nova-input-duration slot="d0" value="PT1H"></nova-input-duration>
+  <nova-input-datetime slot="t1"></nova-input-datetime>
   <output slot="output"><span class="output-label">Midnight Landing</span><span class="output-value"></span></output>
-</nova-temporal-group>
+</nova-input-temporal-group>
 </body></html>

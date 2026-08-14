@@ -394,7 +394,7 @@ export function militaryZoneOffset(letter) {
 const NUMERIC_OFFSET_REGEX = /^([+-])(\d{2}):(\d{2})$/;
 
 /**
- * Parse a zone identifier accepted by nova-datetime / nova-clock attributes.
+ * Parse a zone identifier accepted by nova-input-datetime / nova-clock attributes.
  *
  * Accepted inputs:
  *   - Military single letter (Z, A–Y excluding J), case-insensitive
@@ -429,7 +429,7 @@ export function parseZone(str) {
 /**
  * Project an Instant into a fixed-offset zone and return its wall-clock
  * fields as a date + time record pair. Used by Instant-canonical components
- * (nova-datetime, nova-clock) for segment rendering.
+ * (nova-input-datetime, nova-clock) for segment rendering.
  *
  * @param {Temporal.Instant} instant
  * @param {string} zoneId  Temporal-valid zone identifier (output of parseZone)

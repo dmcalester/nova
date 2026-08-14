@@ -1,7 +1,7 @@
 import { test, expect } from '../helpers/coverage.js';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-datetime.html');
+  await page.goto('/tests/fixtures/nova-input-datetime.html');
 });
 
 const cases = [
@@ -11,9 +11,9 @@ const cases = [
 ];
 
 for (const { input, expected, label } of cases) {
-  test(`nova-datetime input contract: ${label}`, async ({ page }) => {
+  test(`nova-input-datetime input contract: ${label}`, async ({ page }) => {
     const v = await page.evaluate((iso) => {
-      const el = document.createElement('nova-datetime');
+      const el = document.createElement('nova-input-datetime');
       document.body.appendChild(el);
       el.value = iso;
       return el.value;
@@ -22,9 +22,9 @@ for (const { input, expected, label } of cases) {
   });
 }
 
-test('nova-datetime input contract: unzoned string throws RangeError', async ({ page }) => {
+test('nova-input-datetime input contract: unzoned string throws RangeError', async ({ page }) => {
   const threw = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     document.body.appendChild(el);
     try {
       el.value = '2026-02-09T14:30:00';
@@ -36,12 +36,12 @@ test('nova-datetime input contract: unzoned string throws RangeError', async ({ 
   expect(threw).toBe(true);
 });
 
-test('nova-datetime: pasting an unzoned full datetime is rejected, not silently degraded to date-only', async ({ page }) => {
+test('nova-input-datetime: pasting an unzoned full datetime is rejected, not silently degraded to date-only', async ({ page }) => {
   // Regression: `Temporal.PlainDate.from("2026-02-09T14:30:00")` leniently
   // extracts the date, so an unzoned datetime used to slip through the
   // flexible paste path and silently overwrite the date while dropping time.
   const result = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('value', '2026-04-09T14:30:00Z');
     document.body.appendChild(el);
     const before = el.value;
@@ -54,9 +54,9 @@ test('nova-datetime: pasting an unzoned full datetime is rejected, not silently 
   expect(result.after).toBe(result.before);
 });
 
-test('nova-datetime strict (pattern) path: pasting an unzoned datetime is rejected', async ({ page }) => {
+test('nova-input-datetime strict (pattern) path: pasting an unzoned datetime is rejected', async ({ page }) => {
   const result = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('pattern', 'x'); // routes paste through the strict parser
     el.setAttribute('value', '2026-04-09T14:30:00Z');
     document.body.appendChild(el);
@@ -69,9 +69,9 @@ test('nova-datetime strict (pattern) path: pasting an unzoned datetime is reject
   expect(result.after).toBe(result.before);
 });
 
-test('nova-datetime strict (pattern) path: pasted offset datetime is Instant-converted, not stored as wall-clock', async ({ page }) => {
+test('nova-input-datetime strict (pattern) path: pasted offset datetime is Instant-converted, not stored as wall-clock', async ({ page }) => {
   const value = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('pattern', 'x');
     document.body.appendChild(el);
     const dt = new DataTransfer();
@@ -83,13 +83,13 @@ test('nova-datetime strict (pattern) path: pasted offset datetime is Instant-con
   expect(value).toBe('2026-02-09T19:30:00Z');
 });
 
-test('nova-datetime ordinal: input ordinal form preserved (calendar-mode component)', async ({ page }) => {
+test('nova-input-datetime ordinal: input ordinal form preserved (calendar-mode component)', async ({ page }) => {
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     document.body.appendChild(el);
     el.value = '2026-040T14:30:00Z';
     return el.value;
   });
-  // nova-datetime defaults to calendar format; 2026-040 normalizes to 2026-02-09
+  // nova-input-datetime defaults to calendar format; 2026-040 normalizes to 2026-02-09
   expect(v).toBe('2026-02-09T14:30:00Z');
 });

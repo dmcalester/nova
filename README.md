@@ -49,7 +49,7 @@ Nova is delivered as source. Copy the files you need into your project — no in
 <link rel="stylesheet" href="css/nova-temporal.css">
 <script type="module" src="js/nova-temporal/index.js"></script>
 
-<nova-datetime value="2026-04-30T12:00:00Z"></nova-datetime>
+<nova-input-datetime value="2026-04-30T12:00:00Z"></nova-input-datetime>
 ```
 
 See [`js/nova-temporal/README.md`](js/nova-temporal/README.md) for the full set of components, attributes, and events.

@@ -2,8 +2,8 @@ import { test, expect } from '../helpers/coverage.js';
 const getVal = (page, sel = '#el') => page.evaluate((s) => document.querySelector(s).value, sel);
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-duration.html');
-  await page.waitForFunction(() => customElements.get('nova-duration') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-duration.html');
+  await page.waitForFunction(() => customElements.get('nova-input-duration') !== undefined);
 });
 
 test('initial value round-trips', async ({ page }) => {
@@ -74,7 +74,7 @@ test('full duration with years months and days round-trips', async ({ page }) =>
 
 test('week-form duration is rejected', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'year');
     document.body.append(el);
     let threw = null;
@@ -90,7 +90,7 @@ test('week-form duration is rejected', async ({ page }) => {
 
 test('largest-unit="hour" smallest-unit="second" exposes h/m/s only', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'hour');
     el.setAttribute('smallest-unit', 'second');
     el.setAttribute('value', 'PT4H33M12S');
@@ -114,7 +114,7 @@ test('largest-unit="hour" smallest-unit="second" exposes h/m/s only', async ({ p
 
 test('largest-unit="day" smallest-unit="hour" exposes d/h only', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'day');
     el.setAttribute('smallest-unit', 'hour');
     el.setAttribute('value', 'P2DT4H');
@@ -136,7 +136,7 @@ test('largest-unit="day" smallest-unit="hour" exposes d/h only', async ({ page }
 
 test('nonzero units outside the visible duration window are rejected', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'hour');
     el.setAttribute('smallest-unit', 'second');
     document.body.append(el);
@@ -154,7 +154,7 @@ test('nonzero units outside the visible duration window are rejected', async ({ 
 
 test('invalid duration unit window throws', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     document.body.append(el);
     el.setAttribute('largest-unit', 'second');
     el.setAttribute('smallest-unit', 'day');
@@ -172,7 +172,7 @@ test('invalid duration unit window throws', async ({ page }) => {
 
 test('default descriptors: days pad=3, hours/minutes/seconds pad=2', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'day');
     el.setAttribute('smallest-unit', 'second');
     document.body.append(el);
@@ -188,7 +188,7 @@ test('default descriptors: days pad=3, hours/minutes/seconds pad=2', async ({ pa
 
 test('largest-unit-digits="4" widens day field to 4 digits and accepts 1234D', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'day');
     el.setAttribute('smallest-unit', 'second');
     el.setAttribute('largest-unit-digits', '4');
@@ -207,7 +207,7 @@ test('largest-unit-digits="4" widens day field to 4 digits and accepts 1234D', a
 
 test('setting largest-unit-digits after connect rebuilds descriptors', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'day');
     document.body.append(el);
     const before = el.activeDescriptors[0].pad;
@@ -227,7 +227,7 @@ test('largest-unit-digits narrower than natural width is reported as an error', 
         event.preventDefault();
       };
       window.addEventListener('error', handler);
-      const el = document.createElement('nova-duration');
+      const el = document.createElement('nova-input-duration');
       el.setAttribute('largest-unit', 'day');
       el.setAttribute('largest-unit-digits', '2');
       document.body.append(el);
@@ -242,7 +242,7 @@ test('largest-unit-digits narrower than natural width is reported as an error', 
 
 test('calendar-unit duration min/max uses Temporal comparison with relativeTo policy', async ({ page }) => {
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'month');
     el.setAttribute('min', 'P1M');
     el.setAttribute('max', 'P3M');

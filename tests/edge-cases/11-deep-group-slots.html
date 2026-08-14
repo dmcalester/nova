@@ -2,26 +2,26 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-<script type="module" src="/js/nova-temporal/nova-duration.js"></script>
-<script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-datetime.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-duration.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-temporal-group.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
-<nova-temporal-group>
+<nova-input-temporal-group>
   <label slot="t0-label">Launch</label>
-  <nova-datetime slot="t0" value="2026-04-09T08:00:00Z"></nova-datetime>
+  <nova-input-datetime slot="t0" value="2026-04-09T08:00:00Z"></nova-input-datetime>
   <label slot="d0-label">Burn 1</label>
-  <nova-duration slot="d0" value="PT45M"></nova-duration>
+  <nova-input-duration slot="d0" value="PT45M"></nova-input-duration>
   <label slot="d1-label">Coast</label>
-  <nova-duration slot="d1" value="PT2H"></nova-duration>
+  <nova-input-duration slot="d1" value="PT2H"></nova-input-duration>
   <label slot="d2-label">Burn 2</label>
-  <nova-duration slot="d2" value="PT30M"></nova-duration>
+  <nova-input-duration slot="d2" value="PT30M"></nova-input-duration>
   <label slot="d3-label">Descent</label>
-  <nova-duration slot="d3" value="PT1H15M"></nova-duration>
+  <nova-input-duration slot="d3" value="PT1H15M"></nova-input-duration>
   <label slot="d4-label">Cool Down</label>
-  <nova-duration slot="d4" value="PT2H30M"></nova-duration>
+  <nova-input-duration slot="d4" value="PT2H30M"></nova-input-duration>
   <label slot="t1-label">Mission End</label>
-  <nova-datetime slot="t1"></nova-datetime>
+  <nova-input-datetime slot="t1"></nova-input-datetime>
   <output slot="output"><span class="output-label">Total Mission Time</span><span class="output-value"></span></output>
-</nova-temporal-group>
+</nova-input-temporal-group>
 </body></html>

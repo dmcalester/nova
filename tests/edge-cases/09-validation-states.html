@@ -2,17 +2,17 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
-<script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-<script type="module" src="/js/nova-temporal/nova-duration.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-ordinal-date.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-datetime.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-duration.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
 <form id="chaos-form">
-  <nova-ordinal-date name="d" required></nova-ordinal-date>
-  <nova-datetime name="dt" required></nova-datetime>
-  <nova-datetime name="dt-under" value="2026-01-01T00:00:00Z" min="2026-04-01T00:00:00Z"></nova-datetime>
-  <nova-datetime name="dt-over" value="2026-12-31T00:00:00Z" max="2026-04-30T00:00:00Z"></nova-datetime>
-  <nova-duration name="dur" required></nova-duration>
+  <nova-input-ordinal-date name="d" required></nova-input-ordinal-date>
+  <nova-input-datetime name="dt" required></nova-input-datetime>
+  <nova-input-datetime name="dt-under" value="2026-01-01T00:00:00Z" min="2026-04-01T00:00:00Z"></nova-input-datetime>
+  <nova-input-datetime name="dt-over" value="2026-12-31T00:00:00Z" max="2026-04-30T00:00:00Z"></nova-input-datetime>
+  <nova-input-duration name="dur" required></nova-input-duration>
   <button type="submit">Submit (should fail)</button>
 </form>
 </body></html>

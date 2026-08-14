@@ -117,7 +117,7 @@ This is pretty bare-bones
  *
  *   Cursor / interaction states  →  novaInputStatesSheet in nova-stylesheets.js
  *   Visual chrome per state      →  each component's local CSSStyleSheet
- *                                   (nova-segment-input-base.js, nova-temporal-group.js)
+ *                                   (nova-segment-input-base.js, nova-input-temporal-group.js)
  *
  * Shadow DOM rules carry a plain inline comment of the form
  * "mirrors <selector> in nova-form-controls.css" pointing back here. Native

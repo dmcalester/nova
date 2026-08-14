@@ -7,20 +7,20 @@ test.beforeEach(async ({ page }) => {
 
 // ── Quick Start ─────────────────────────────────────────────────────────────
 
-test('Quick Start: nova-datetime renders and value matches attribute', async ({ page }) => {
+test('Quick Start: nova-input-datetime renders and value matches attribute', async ({ page }) => {
   await page.setContent(`
     <link rel="stylesheet" href="/css/nova-tokens.css">
     <link rel="stylesheet" href="/css/nova-colors.css">
     <link rel="stylesheet" href="/css/nova-form-controls.css">
     <script type="module" src="/js/nova-temporal/index.js"></script>
-    <nova-datetime
+    <nova-input-datetime
       name="observation_time"
       smallest-unit="second"
       value="2026-02-09T14:30:00Z"
-    ></nova-datetime>
+    ></nova-input-datetime>
   `);
-  await page.waitForFunction(() => customElements.get('nova-datetime') !== undefined);
-  const value = await page.evaluate(() => document.querySelector('nova-datetime').value);
+  await page.waitForFunction(() => customElements.get('nova-input-datetime') !== undefined);
+  const value = await page.evaluate(() => document.querySelector('nova-input-datetime').value);
   expect(value).toBe('2026-02-09T14:30:00Z');
 });
 
@@ -28,7 +28,7 @@ test('Quick Start: nova-datetime renders and value matches attribute', async ({ 
 
 test('Interface Contract: .value and .temporal accessors', async ({ page }) => {
   const r = await page.evaluate(async () => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('value', '2026-02-09T14:30:00Z');
     document.body.appendChild(el);
     // Wait for upgrade — read .value until it's defined
@@ -84,15 +84,15 @@ test('Form Integration: FormData captures ISO value strings', async ({ page }) =
     const form = document.createElement('form');
     form.id = 'obs-form';
     form.innerHTML = `
-      <nova-ordinal-date name="obs_date" value="2026-040" required></nova-ordinal-date>
-      <nova-datetime name="obs_datetime" smallest-unit="second" value="2026-02-09T14:30:00Z"></nova-datetime>
+      <nova-input-ordinal-date name="obs_date" value="2026-040" required></nova-input-ordinal-date>
+      <nova-input-datetime name="obs_datetime" smallest-unit="second" value="2026-02-09T14:30:00Z"></nova-input-datetime>
     `;
     document.body.appendChild(form);
     // Wait for both children to upgrade
     let attempts = 0;
     while (
-      (form.querySelector('nova-ordinal-date').value === undefined ||
-       form.querySelector('nova-datetime').value === undefined) &&
+      (form.querySelector('nova-input-ordinal-date').value === undefined ||
+       form.querySelector('nova-input-datetime').value === undefined) &&
       attempts < 50
     ) {
       await new Promise((r) => setTimeout(r, 10));
@@ -111,15 +111,15 @@ test('Group range mode: AOS/LOS computes PT1H15M duration in output', async ({ p
     <link rel="stylesheet" href="/css/nova-colors.css">
     <link rel="stylesheet" href="/css/nova-form-controls.css">
     <script type="module" src="/js/nova-temporal/index.js"></script>
-    <nova-temporal-group name="contact-window">
-      <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
-      <nova-datetime slot="t1" value="2026-02-09T15:45:00Z"></nova-datetime>
+    <nova-input-temporal-group name="contact-window">
+      <nova-input-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-input-datetime>
+      <nova-input-datetime slot="t1" value="2026-02-09T15:45:00Z"></nova-input-datetime>
       <output slot="output">
         <span class="output-value"></span>
       </output>
-    </nova-temporal-group>
+    </nova-input-temporal-group>
   `);
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
   await page.waitForFunction(() => {
     const el = document.querySelector('.output-value');
     return el && el.textContent && el.textContent.length > 0;
@@ -134,15 +134,15 @@ test('Group compute mode: launch + 2h window computes cutoff', async ({ page }) 
     <link rel="stylesheet" href="/css/nova-colors.css">
     <link rel="stylesheet" href="/css/nova-form-controls.css">
     <script type="module" src="/js/nova-temporal/index.js"></script>
-    <nova-temporal-group name="mission-window">
-      <nova-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-datetime>
-      <nova-duration slot="d0" value="PT2H"></nova-duration>
+    <nova-input-temporal-group name="mission-window">
+      <nova-input-datetime slot="t0" value="2026-02-09T14:30:00Z"></nova-input-datetime>
+      <nova-input-duration slot="d0" value="PT2H"></nova-input-duration>
       <output slot="output">
         <span class="output-value"></span>
       </output>
-    </nova-temporal-group>
+    </nova-input-temporal-group>
   `);
-  await page.waitForFunction(() => customElements.get('nova-temporal-group') !== undefined);
+  await page.waitForFunction(() => customElements.get('nova-input-temporal-group') !== undefined);
   await page.waitForFunction(() => {
     const el = document.querySelector('.output-value');
     return el && el.textContent && el.textContent.length > 0;

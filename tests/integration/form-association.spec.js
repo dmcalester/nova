@@ -2,7 +2,7 @@ import { test, expect } from '../helpers/coverage.js';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/tests/fixtures/form-association.html');
-  await page.waitForFunction(() => customElements.get('nova-datetime') !== undefined);
+  await page.waitForFunction(() => customElements.get('nova-input-datetime') !== undefined);
 });
 
 test('form submits correct FormData entries', async ({ page }) => {

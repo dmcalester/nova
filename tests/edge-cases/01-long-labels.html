@@ -2,18 +2,18 @@
 <link rel="stylesheet" href="/css/nova-tokens.css">
 <link rel="stylesheet" href="/css/nova-colors.css">
 <link rel="stylesheet" href="/css/nova-form-controls.css">
-<script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-<script type="module" src="/js/nova-temporal/nova-duration.js"></script>
-<script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-datetime.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-duration.js"></script>
+<script type="module" src="/js/nova-temporal/nova-input-temporal-group.js"></script>
 <style>body { padding: 2rem; }</style>
 </head><body>
-<nova-temporal-group>
+<nova-input-temporal-group>
   <label slot="t0-label">Acquisition of Signal (AOS) for the primary ground station tracking pass during the ascending node crossing of the orbital period</label>
-  <nova-datetime slot="t0" value="2026-04-09T14:30:00Z"></nova-datetime>
+  <nova-input-datetime slot="t0" value="2026-04-09T14:30:00Z"></nova-input-datetime>
   <label slot="d0-label">Contact window duration for scheduled downlink pass including margin for Doppler correction and signal acquisition overhead</label>
-  <nova-duration slot="d0" value="PT1H30M"></nova-duration>
+  <nova-input-duration slot="d0" value="PT1H30M"></nova-input-duration>
   <label slot="t1-label">Loss of Signal (LOS) computed end time for the primary ground station tracking pass including all allocated margin periods</label>
-  <nova-datetime slot="t1"></nova-datetime>
+  <nova-input-datetime slot="t1"></nova-input-datetime>
   <output slot="output"><span class="output-label">Result</span><span class="output-value"></span></output>
-</nova-temporal-group>
+</nova-input-temporal-group>
 </body></html>

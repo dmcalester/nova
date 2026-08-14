@@ -4,8 +4,8 @@
  *
  * Provides the public `temporal` getter/setter, `temporalType` (static and
  * instance), and the `_toTemporal` / `_formatTemporal` protected hooks that
- * concrete temporal widgets (nova-datetime, nova-ordinal-date,
- * nova-duration) implement.
+ * concrete temporal widgets (nova-input-datetime, nova-input-ordinal-date,
+ * nova-input-duration) implement.
  *
  * Generic segmented inputs (e.g. a future nova-tle) should extend
  * NovaSegmentInputBase directly and skip this layer.
@@ -34,11 +34,11 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     * Get the current value as a Temporal object.
     *
     * Per-subclass type:
-    *   <nova-datetime>     → Temporal.Instant
-    *   <nova-ordinal-date> → Temporal.PlainDate
-    *   <nova-duration>     → Temporal.Duration
+    *   <nova-input-datetime>     → Temporal.Instant
+    *   <nova-input-ordinal-date> → Temporal.PlainDate
+    *   <nova-input-duration>     → Temporal.Duration
     *
-    * Returns `null` when empty, or — for <nova-ordinal-date> in day-only mode
+    * Returns `null` when empty, or — for <nova-input-ordinal-date> in day-only mode
     * — when the component cannot produce a Temporal value at all.
     *
     * @returns {Temporal.Instant|Temporal.PlainDate|Temporal.PlainTime|Temporal.Duration|null}
@@ -70,7 +70,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
     *
     * @throws {TypeError} If `t` is not the expected Temporal type, or if the
     *   component is in a configuration that cannot hold a Temporal value
-    *   (e.g. <nova-ordinal-date> in day-only mode).
+    *   (e.g. <nova-input-ordinal-date> in day-only mode).
     */
    set temporal(t) {
       if (t == null) {
@@ -119,7 +119,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
 
    /**
     * Instance-level temporal type. Subclasses may override to narrow the
-    * static class-level type per instance (e.g. nova-ordinal-date returns
+    * static class-level type per instance (e.g. nova-input-ordinal-date returns
     * null in day-only mode).
     *
     * @returns {TemporalTypeName}
@@ -165,7 +165,7 @@ export class NovaTemporalInputBase extends NovaSegmentInputBase {
    /**
     * Dispatch the shared `precision-truncated` event. Detail uses flat keys
     * `{ smallestUnit, input, parsedRecord }`. Only inputs that expose a
-    * `smallestUnit` getter (nova-datetime) emit this.
+    * `smallestUnit` getter (nova-input-datetime) emit this.
     *
     * @param {string} input the original string that carried excess precision
     * @param {object} parsedRecord the fully-parsed time record (pre-truncation)

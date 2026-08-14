@@ -14,10 +14,10 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" />
 
-    <script type="module" src="/js/nova-temporal/nova-datetime.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-ordinal-date.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-duration.js"></script>
-    <script type="module" src="/js/nova-temporal/nova-temporal-group.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-input-datetime.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-input-ordinal-date.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-input-duration.js"></script>
+    <script type="module" src="/js/nova-temporal/nova-input-temporal-group.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
 
@@ -175,8 +175,8 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-datetime></nova-datetime>
-            <pre><code class="language-markup">&lt;nova-datetime&gt;&lt;/nova-datetime&gt;</code></pre>
+            <nova-input-datetime></nova-input-datetime>
+            <pre><code class="language-markup">&lt;nova-input-datetime&gt;&lt;/nova-input-datetime&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -187,7 +187,7 @@
          <p>
             Control the precision of the time portion with
             <code>smallest-unit</code>. The largest unit is fixed by the
-            component itself (date for <code>nova-datetime</code>). Valid time
+            component itself (date for <code>nova-input-datetime</code>). Valid time
             units are <code>minute</code>, <code>second</code>,
             <code>millisecond</code>, <code>microsecond</code>, and
             <code>nanosecond</code>.
@@ -197,13 +197,13 @@
       <div class="demo-wrapper">
          <div class="demo-stage">
 
-            <nova-datetime
+            <nova-input-datetime
                smallest-unit="nanosecond"
-               value="2026-02-09T14:30:00Z"></nova-datetime>
+               value="2026-02-09T14:30:00Z"></nova-input-datetime>
             <pre><code class="language-markup">
-&lt;nova-datetime
+&lt;nova-input-datetime
    smallest-unit="nanosecond"
-   value="2026-02-09T14:30:00Z"&gt;&lt;/nova-datetime&gt;</code></pre>
+   value="2026-02-09T14:30:00Z"&gt;&lt;/nova-input-datetime&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -214,7 +214,7 @@
          <p>
             Nova's temporal components deviate from the HTML spec for date-time
             input elements and will copy a full ISO-8601 string to your
-            clipboard. Try it by focusing on the <code>nova-datetime</code>
+            clipboard. Try it by focusing on the <code>nova-input-datetime</code>
             component, copying the value, and pasting into the text input
             below.
          </p>
@@ -222,9 +222,9 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-datetime value="2026-01-02T14:00Z"></nova-datetime>
+            <nova-input-datetime value="2026-01-02T14:00Z"></nova-input-datetime>
             <input type="text" class="nova-input" placeholder="Paste here" />
-            <pre><code class="language-markup">&lt;nova-datetime value="2026-01-02T14:00Z"&gt;&lt;/nova-datetime&gt;
+            <pre><code class="language-markup">&lt;nova-input-datetime value="2026-01-02T14:00Z"&gt;&lt;/nova-input-datetime&gt;
 &lt;input type="text" /&gt;</code></pre>
          </div>
       </div>
@@ -252,14 +252,14 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-datetime
+            <nova-input-datetime
                value="2026-02-09T14:30Z"
                min="2026-02-07T00:00Z"
-               max="2026-02-11T00:00Z"></nova-datetime>
-            <pre><code class="language-markup">&lt;nova-datetime
+               max="2026-02-11T00:00Z"></nova-input-datetime>
+            <pre><code class="language-markup">&lt;nova-input-datetime
    value="2026-02-09T14:30Z"
    min="2026-02-07T00:00Z"
-   max="2026-02-11T00:00Z"&gt;&lt;/nova-datetime&gt;</code></pre>
+   max="2026-02-11T00:00Z"&gt;&lt;/nova-input-datetime&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -281,11 +281,11 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-datetime value="2026-02-09T14:30Z"></nova-datetime>
-            <nova-datetime value="2026-02-09T14:30Z" hotkeys></nova-datetime>
-            <pre><code class="language-markup">&lt;nova-datetime value="2026-02-09T14:30Z"&gt;&lt;/nova-datetime&gt;
+            <nova-input-datetime value="2026-02-09T14:30Z"></nova-input-datetime>
+            <nova-input-datetime value="2026-02-09T14:30Z" hotkeys></nova-input-datetime>
+            <pre><code class="language-markup">&lt;nova-input-datetime value="2026-02-09T14:30Z"&gt;&lt;/nova-input-datetime&gt;
 
-&lt;nova-datetime value="2026-02-09T14:30Z" hotkeys&gt;&lt;/nova-datetime&gt;</code></pre>
+&lt;nova-input-datetime value="2026-02-09T14:30Z" hotkeys&gt;&lt;/nova-input-datetime&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -308,13 +308,13 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-datetime value="2026-01-31T12:00Z"></nova-datetime>
-            <nova-datetime value="2026-01-31T12:00Z" overflow="reject"></nova-datetime>
-            <pre><code class="language-markup">&lt;nova-datetime value="2026-01-31T12:00Z"&gt;&lt;/nova-datetime&gt;
+            <nova-input-datetime value="2026-01-31T12:00Z"></nova-input-datetime>
+            <nova-input-datetime value="2026-01-31T12:00Z" overflow="reject"></nova-input-datetime>
+            <pre><code class="language-markup">&lt;nova-input-datetime value="2026-01-31T12:00Z"&gt;&lt;/nova-input-datetime&gt;
 
-&lt;nova-datetime
+&lt;nova-input-datetime
    value="2026-01-31T12:00Z"
-   overflow="reject"&gt;&lt;/nova-datetime&gt;</code></pre>
+   overflow="reject"&gt;&lt;/nova-input-datetime&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -324,7 +324,7 @@
          <h2>Duration</h2>
          <p>
             Duration is natively supported in Temporal. The
-            <code>nova-duration</code> component provides an input control to
+            <code>nova-input-duration</code> component provides an input control to
             handle ISO-8601 compliant duration strings.
          </p>
          <ol class="step-list">
@@ -341,8 +341,8 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-duration></nova-duration>
-            <pre><code class="language-markup">&lt;nova-duration&gt;&lt;/nova-duration&gt;</code></pre>
+            <nova-input-duration></nova-input-duration>
+            <pre><code class="language-markup">&lt;nova-input-duration&gt;&lt;/nova-input-duration&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -374,23 +374,23 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-duration
+            <nova-input-duration
                largest-unit="day"
                smallest-unit="second"
-               value="PT1H00M00S"></nova-duration>
-            <nova-duration
+               value="PT1H00M00S"></nova-input-duration>
+            <nova-input-duration
                largest-unit="minute"
                smallest-unit="millisecond"
-               value="PT5M00.000S"></nova-duration>
-            <pre><code class="language-markup">&lt;nova-duration
+               value="PT5M00.000S"></nova-input-duration>
+            <pre><code class="language-markup">&lt;nova-input-duration
    largest-unit="hour"
    smallest-unit="second"
-   value="PT1H00M00S"&gt;&lt;/nova-duration&gt;
+   value="PT1H00M00S"&gt;&lt;/nova-input-duration&gt;
 
-&lt;nova-duration
+&lt;nova-input-duration
    largest-unit="minute"
    smallest-unit="millisecond"
-   value="PT5M00.000S"&gt;&lt;/nova-duration&gt;</code></pre>
+   value="PT5M00.000S"&gt;&lt;/nova-input-duration&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -414,16 +414,16 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-duration
+            <nova-input-duration
                largest-unit="hour"
                smallest-unit="second"
                largest-unit-digits="4"
-               value="PT0H00M"></nova-duration>
-            <pre><code class="language-markup">&lt;nova-duration
+               value="PT0H00M"></nova-input-duration>
+            <pre><code class="language-markup">&lt;nova-input-duration
    largest-unit="hour"
    smallest-unit="second"
    largest-unit-digits="4"
-   value="PT0H00M"&gt;&lt;/nova-duration&gt;</code></pre>
+   value="PT0H00M"&gt;&lt;/nova-input-duration&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -432,7 +432,7 @@
       <div class="instructions">
          <h1>Temporal Groups</h1>
          <p>
-            <code>nova-temporal-group</code> coordinates two or more temporal
+            <code>nova-input-temporal-group</code> coordinates two or more temporal
             inputs and exposes a single computed output. Mode is inferred from
             the slots you provide — no <code>mode</code> attribute to set.
          </p>
@@ -451,23 +451,23 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group>
+            <nova-input-temporal-group>
                <label slot="t0-label" for="intro-t0">Start</label>
-               <nova-datetime slot="t0" id="intro-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <nova-input-datetime slot="t0" id="intro-t0" value="2026-05-01T09:00Z"></nova-input-datetime>
                <label slot="t1-label" for="intro-t1">End</label>
-               <nova-datetime slot="t1" id="intro-t1" value="2026-05-01T17:30Z"></nova-datetime>
+               <nova-input-datetime slot="t1" id="intro-t1" value="2026-05-01T17:30Z"></nova-input-datetime>
                <output slot="output"><span class="output-label">Duration</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
+            </nova-input-temporal-group>
+            <pre><code class="language-markup">&lt;nova-input-temporal-group&gt;
    &lt;label slot="t0-label" for="t0"&gt;Start&lt;/label&gt;
-   &lt;nova-datetime slot="t0" id="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-input-datetime slot="t0" id="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-input-datetime&gt;
    &lt;label slot="t1-label" for="t1"&gt;End&lt;/label&gt;
-   &lt;nova-datetime slot="t1" id="t1" value="2026-05-01T17:30Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-input-datetime slot="t1" id="t1" value="2026-05-01T17:30Z"&gt;&lt;/nova-input-datetime&gt;
    &lt;output slot="output"&gt;
       &lt;span class="output-label"&gt;Duration&lt;/span&gt;
       &lt;span class="output-value"&gt;&lt;/span&gt;
    &lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -494,23 +494,23 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group>
+            <nova-input-temporal-group>
                <label slot="t0-label" for="compute-t0">Start</label>
-               <nova-datetime slot="t0" id="compute-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <nova-input-datetime slot="t0" id="compute-t0" value="2026-05-01T09:00Z"></nova-input-datetime>
                <label slot="d0-label" for="compute-d0">For</label>
-               <nova-duration slot="d0" id="compute-d0" value="PT1H30M"></nova-duration>
+               <nova-input-duration slot="d0" id="compute-d0" value="PT1H30M"></nova-input-duration>
                <output slot="output"><span class="output-label">End</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
+            </nova-input-temporal-group>
+            <pre><code class="language-markup">&lt;nova-input-temporal-group&gt;
    &lt;label slot="t0-label" for="t0"&gt;Start&lt;/label&gt;
-   &lt;nova-datetime slot="t0" id="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-input-datetime slot="t0" id="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-input-datetime&gt;
    &lt;label slot="d0-label" for="d0"&gt;For&lt;/label&gt;
-   &lt;nova-duration slot="d0" id="d0" value="PT1H30M"&gt;&lt;/nova-duration&gt;
+   &lt;nova-input-duration slot="d0" id="d0" value="PT1H30M"&gt;&lt;/nova-input-duration&gt;
    &lt;output slot="output"&gt;
       &lt;span class="output-label"&gt;End&lt;/span&gt;
       &lt;span class="output-value"&gt;&lt;/span&gt;
    &lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -528,24 +528,24 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group>
+            <nova-input-temporal-group>
                <label slot="t0-label" for="multi-t0">Ignition</label>
-               <nova-datetime slot="t0" id="multi-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <nova-input-datetime slot="t0" id="multi-t0" value="2026-05-01T09:00Z"></nova-input-datetime>
                <label slot="d0-label" for="multi-d0">Burn</label>
-               <nova-duration slot="d0" id="multi-d0" value="PT15M"></nova-duration>
+               <nova-input-duration slot="d0" id="multi-d0" value="PT15M"></nova-input-duration>
                <label slot="d1-label" for="multi-d1">Coast</label>
-               <nova-duration slot="d1" id="multi-d1" largest-unit="hour" value="PT2H"></nova-duration>
+               <nova-input-duration slot="d1" id="multi-d1" largest-unit="hour" value="PT2H"></nova-input-duration>
                <label slot="d2-label" for="multi-d2">Burn</label>
-               <nova-duration slot="d2" id="multi-d2" value="PT5M"></nova-duration>
+               <nova-input-duration slot="d2" id="multi-d2" value="PT5M"></nova-input-duration>
                <output slot="output"><span class="output-label">Shutdown</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
-   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
-   &lt;nova-duration slot="d0" value="PT15M"&gt;&lt;/nova-duration&gt;
-   &lt;nova-duration slot="d1" largest-unit="hour" value="PT2H"&gt;&lt;/nova-duration&gt;
-   &lt;nova-duration slot="d2" value="PT5M"&gt;&lt;/nova-duration&gt;
+            </nova-input-temporal-group>
+            <pre><code class="language-markup">&lt;nova-input-temporal-group&gt;
+   &lt;nova-input-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-input-datetime&gt;
+   &lt;nova-input-duration slot="d0" value="PT15M"&gt;&lt;/nova-input-duration&gt;
+   &lt;nova-input-duration slot="d1" largest-unit="hour" value="PT2H"&gt;&lt;/nova-input-duration&gt;
+   &lt;nova-input-duration slot="d2" value="PT5M"&gt;&lt;/nova-input-duration&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -573,18 +573,18 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group min="PT30M" max="PT8H">
+            <nova-input-temporal-group min="PT30M" max="PT8H">
                <label slot="t0-label" for="rng-t0">Start</label>
-               <nova-datetime slot="t0" id="rng-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <nova-input-datetime slot="t0" id="rng-t0" value="2026-05-01T09:00Z"></nova-input-datetime>
                <label slot="t1-label" for="rng-t1">End</label>
-               <nova-datetime slot="t1" id="rng-t1" value="2026-05-01T11:00Z"></nova-datetime>
+               <nova-input-datetime slot="t1" id="rng-t1" value="2026-05-01T11:00Z"></nova-input-datetime>
                <output slot="output"><span class="output-label">Duration</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group min="PT30M" max="PT8H"&gt;
-   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
-   &lt;nova-datetime slot="t1" value="2026-05-01T11:00Z"&gt;&lt;/nova-datetime&gt;
+            </nova-input-temporal-group>
+            <pre><code class="language-markup">&lt;nova-input-temporal-group min="PT30M" max="PT8H"&gt;
+   &lt;nova-input-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-input-datetime&gt;
+   &lt;nova-input-datetime slot="t1" value="2026-05-01T11:00Z"&gt;&lt;/nova-input-datetime&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -602,20 +602,20 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group min="2026-05-01T09:00Z" max="2026-05-01T12:00Z">
+            <nova-input-temporal-group min="2026-05-01T09:00Z" max="2026-05-01T12:00Z">
                <label slot="t0-label" for="cmp-t0">Start</label>
-               <nova-datetime slot="t0" id="cmp-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <nova-input-datetime slot="t0" id="cmp-t0" value="2026-05-01T09:00Z"></nova-input-datetime>
                <label slot="d0-label" for="cmp-d0">For</label>
-               <nova-duration slot="d0" id="cmp-d0" value="PT1H"></nova-duration>
+               <nova-input-duration slot="d0" id="cmp-d0" value="PT1H"></nova-input-duration>
                <output slot="output"><span class="output-label">End</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group
+            </nova-input-temporal-group>
+            <pre><code class="language-markup">&lt;nova-input-temporal-group
    min="2026-05-01T09:00Z"
    max="2026-05-01T12:00Z"&gt;
-   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
-   &lt;nova-duration slot="d0" value="PT1H"&gt;&lt;/nova-duration&gt;
+   &lt;nova-input-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-input-datetime&gt;
+   &lt;nova-input-duration slot="d0" value="PT1H"&gt;&lt;/nova-input-duration&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -625,25 +625,25 @@
          <h2>Ordinal-Date Range</h2>
          <p>
             The group works with any temporal type — not just
-            <code>nova-datetime</code>. Use <code>nova-ordinal-date</code> for
+            <code>nova-input-datetime</code>. Use <code>nova-input-ordinal-date</code> for
             day-grain (day-of-year) ranges; the output reports days.
          </p>
       </div>
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group>
+            <nova-input-temporal-group>
                <label slot="t0-label" for="date-t0">Check-in</label>
-               <nova-ordinal-date slot="t0" id="date-t0" value="2026-121"></nova-ordinal-date>
+               <nova-input-ordinal-date slot="t0" id="date-t0" value="2026-121"></nova-input-ordinal-date>
                <label slot="t1-label" for="date-t1">Check-out</label>
-               <nova-ordinal-date slot="t1" id="date-t1" value="2026-128"></nova-ordinal-date>
+               <nova-input-ordinal-date slot="t1" id="date-t1" value="2026-128"></nova-input-ordinal-date>
                <output slot="output"><span class="output-label">Stay</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group&gt;
-   &lt;nova-ordinal-date slot="t0" value="2026-121"&gt;&lt;/nova-ordinal-date&gt;
-   &lt;nova-ordinal-date slot="t1" value="2026-128"&gt;&lt;/nova-ordinal-date&gt;
+            </nova-input-temporal-group>
+            <pre><code class="language-markup">&lt;nova-input-temporal-group&gt;
+   &lt;nova-input-ordinal-date slot="t0" value="2026-121"&gt;&lt;/nova-input-ordinal-date&gt;
+   &lt;nova-input-ordinal-date slot="t1" value="2026-128"&gt;&lt;/nova-input-ordinal-date&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -664,13 +664,13 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group id="fmt-group" output-format="interval">
+            <nova-input-temporal-group id="fmt-group" output-format="interval">
                <label slot="t0-label" for="fmt-t0">Start</label>
-               <nova-datetime slot="t0" id="fmt-t0" value="2026-05-01T09:00:00Z"></nova-datetime>
+               <nova-input-datetime slot="t0" id="fmt-t0" value="2026-05-01T09:00:00Z"></nova-input-datetime>
                <label slot="t1-label" for="fmt-t1">End</label>
-               <nova-datetime slot="t1" id="fmt-t1" value="2026-05-08T17:00:00Z"></nova-datetime>
+               <nova-input-datetime slot="t1" id="fmt-t1" value="2026-05-08T17:00:00Z"></nova-input-datetime>
                <output slot="output"><span class="output-label">ISO</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
+            </nova-input-temporal-group>
 
             <p style="margin-top: var(--space-300);">
                <label for="fmt-select">output-format:</label>
@@ -683,11 +683,11 @@
                </select>
             </p>
 
-            <pre><code class="language-markup">&lt;nova-temporal-group output-format="interval"&gt;
-   &lt;nova-datetime slot="t0" value="2026-05-01T09:00:00Z"&gt;&lt;/nova-datetime&gt;
-   &lt;nova-datetime slot="t1" value="2026-05-08T17:00:00Z"&gt;&lt;/nova-datetime&gt;
+            <pre><code class="language-markup">&lt;nova-input-temporal-group output-format="interval"&gt;
+   &lt;nova-input-datetime slot="t0" value="2026-05-01T09:00:00Z"&gt;&lt;/nova-input-datetime&gt;
+   &lt;nova-input-datetime slot="t1" value="2026-05-08T17:00:00Z"&gt;&lt;/nova-input-datetime&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -704,18 +704,18 @@
 
       <div class="demo-wrapper">
          <div class="demo-stage">
-            <nova-temporal-group disabled>
+            <nova-input-temporal-group disabled>
                <label slot="t0-label" for="dis-t0">Start</label>
-               <nova-datetime slot="t0" id="dis-t0" value="2026-05-01T09:00Z"></nova-datetime>
+               <nova-input-datetime slot="t0" id="dis-t0" value="2026-05-01T09:00Z"></nova-input-datetime>
                <label slot="d0-label" for="dis-d0">For</label>
-               <nova-duration slot="d0" id="dis-d0" value="PT2H"></nova-duration>
+               <nova-input-duration slot="d0" id="dis-d0" value="PT2H"></nova-input-duration>
                <output slot="output"><span class="output-label">End</span> <span class="output-value"></span></output>
-            </nova-temporal-group>
-            <pre><code class="language-markup">&lt;nova-temporal-group disabled&gt;
-   &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
-   &lt;nova-duration slot="d0" value="PT2H"&gt;&lt;/nova-duration&gt;
+            </nova-input-temporal-group>
+            <pre><code class="language-markup">&lt;nova-input-temporal-group disabled&gt;
+   &lt;nova-input-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-input-datetime&gt;
+   &lt;nova-input-duration slot="d0" value="PT2H"&gt;&lt;/nova-input-duration&gt;
    &lt;output slot="output"&gt;…&lt;/output&gt;
-&lt;/nova-temporal-group&gt;</code></pre>
+&lt;/nova-input-temporal-group&gt;</code></pre>
          </div>
       </div>
       </section>
@@ -724,7 +724,7 @@
       <div class="instructions">
          <h2>Form Integration</h2>
          <p>
-            <code>nova-temporal-group</code> behaves like a
+            <code>nova-input-temporal-group</code> behaves like a
             <code>&lt;fieldset&gt;</code>. With <code>name="window"</code>, each
             child slot ships under <code>window[t0]</code>,
             <code>window[t1]</code>, … plus a <code>window[output]</code>
@@ -740,22 +740,22 @@
       <div class="demo-wrapper">
          <div class="demo-stage">
             <form id="group-form">
-               <nova-temporal-group name="window" required>
+               <nova-input-temporal-group name="window" required>
                   <label slot="t0-label" for="form-t0">Start</label>
-                  <nova-datetime slot="t0" id="form-t0" value="2026-05-01T09:00Z"></nova-datetime>
+                  <nova-input-datetime slot="t0" id="form-t0" value="2026-05-01T09:00Z"></nova-input-datetime>
                   <label slot="t1-label" for="form-t1">End</label>
-                  <nova-datetime slot="t1" id="form-t1" value="2026-05-01T17:00Z"></nova-datetime>
+                  <nova-input-datetime slot="t1" id="form-t1" value="2026-05-01T17:00Z"></nova-input-datetime>
                   <output slot="output"><span class="output-label">Duration</span> <span class="output-value"></span></output>
-               </nova-temporal-group>
+               </nova-input-temporal-group>
                <button type="submit" class="nova-button">Submit</button>
                <output id="form-result" style="color: var(--color-text, #fff); font-family: ui-monospace, monospace; white-space: pre-line;"></output>
             </form>
             <pre><code class="language-markup">&lt;form&gt;
-   &lt;nova-temporal-group name="window" required&gt;
-      &lt;nova-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-datetime&gt;
-      &lt;nova-datetime slot="t1" value="2026-05-01T17:00Z"&gt;&lt;/nova-datetime&gt;
+   &lt;nova-input-temporal-group name="window" required&gt;
+      &lt;nova-input-datetime slot="t0" value="2026-05-01T09:00Z"&gt;&lt;/nova-input-datetime&gt;
+      &lt;nova-input-datetime slot="t1" value="2026-05-01T17:00Z"&gt;&lt;/nova-input-datetime&gt;
       &lt;output slot="output"&gt;…&lt;/output&gt;
-   &lt;/nova-temporal-group&gt;
+   &lt;/nova-input-temporal-group&gt;
    &lt;button type="submit"&gt;Submit&lt;/button&gt;
 &lt;/form&gt;</code></pre>
          </div>

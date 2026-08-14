@@ -2,8 +2,8 @@ import { test, expect } from '../helpers/coverage.js';
 const getVal = (page, sel = '#el') => page.evaluate((s) => document.querySelector(s).value, sel);
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-ordinal-date.html');
-  await page.waitForFunction(() => customElements.get('nova-ordinal-date') !== undefined);
+  await page.goto('/tests/fixtures/nova-input-ordinal-date.html');
+  await page.waitForFunction(() => customElements.get('nova-input-ordinal-date') !== undefined);
 });
 
 test('initial value round-trips', async ({ page }) => {
@@ -60,9 +60,9 @@ test('paste of datetime extracts ordinal date', async ({ page }) => {
 });
 
 test('temporalType: returns "PlainDate" in with-year mode', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-ordinal-date.html');
+  await page.goto('/tests/fixtures/nova-input-ordinal-date.html');
   const t = await page.evaluate(() => {
-    const el = document.createElement('nova-ordinal-date');
+    const el = document.createElement('nova-input-ordinal-date');
     el.setAttribute('value', '2026-040');
     document.body.appendChild(el);
     return el.temporalType;
@@ -71,9 +71,9 @@ test('temporalType: returns "PlainDate" in with-year mode', async ({ page }) => 
 });
 
 test('temporalType: returns null in day-only mode', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-ordinal-date.html');
+  await page.goto('/tests/fixtures/nova-input-ordinal-date.html');
   const t = await page.evaluate(() => {
-    const el = document.createElement('nova-ordinal-date');
+    const el = document.createElement('nova-input-ordinal-date');
     el.setAttribute('value', '040');
     document.body.appendChild(el);
     return el.temporalType;
@@ -82,9 +82,9 @@ test('temporalType: returns null in day-only mode', async ({ page }) => {
 });
 
 test('temporalType: temporal returns null when temporalType is null', async ({ page }) => {
-  await page.goto('/tests/fixtures/nova-ordinal-date.html');
+  await page.goto('/tests/fixtures/nova-input-ordinal-date.html');
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-ordinal-date');
+    const el = document.createElement('nova-input-ordinal-date');
     el.setAttribute('value', '040');
     document.body.appendChild(el);
     return { type: el.temporalType, temporal: el.temporal };

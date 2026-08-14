@@ -1,5 +1,5 @@
 /**
- * <nova-datetime> — Combined date+time input (single component)
+ * <nova-input-datetime> — Combined date+time input (single component)
  *
  * Extends NovaSegmentInputBase to present date and time segments as a single
  * unified input field. All Tab/Shift+Tab/arrow/digit behavior is inherited
@@ -85,7 +85,7 @@ function buildCombinedDescriptors(format, smallestUnit) {
    };
 }
 
-export class NovaDatetime extends NovaTemporalInputBase {
+export class NovaInputDatetime extends NovaTemporalInputBase {
    #format = "date";
    #smallestUnit = "second";
    #dateSegmentCount = 0;
@@ -297,7 +297,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const s = str.trim();
 
       // Flexible path: Instant-first parsing normalizes offset and [zone] forms
-      // to UTC. Unzoned strings are rejected — nova-datetime is Instant-canonical
+      // to UTC. Unzoned strings are rejected — nova-input-datetime is Instant-canonical
       // and requires an explicit UTC offset or Z suffix.
       // Strict path keeps native-only parsing.
       if (!strict) {
@@ -307,14 +307,14 @@ export class NovaDatetime extends NovaTemporalInputBase {
             return;
          }
          throw new RangeError(
-            `nova-datetime.value: cannot parse "${str}" — expected an ISO 8601 datetime with a UTC offset (e.g. "…Z" or "…+00:00")`,
+            `nova-input-datetime.value: cannot parse "${str}" — expected an ISO 8601 datetime with a UTC offset (e.g. "…Z" or "…+00:00")`,
          );
       }
 
       const tIdx = s.indexOf("T");
       if (tIdx < 0) {
          throw new RangeError(
-            `nova-datetime.value: cannot parse "${str}" — missing T separator`,
+            `nova-input-datetime.value: cannot parse "${str}" — missing T separator`,
          );
       }
 
@@ -329,7 +329,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const inst = parseAnyDatetime(s);
       if (!inst) {
          throw new RangeError(
-            `nova-datetime.value: cannot parse "${str}" — expected an ISO 8601 datetime with a UTC offset (e.g. "…Z" or "…+00:00")`,
+            `nova-input-datetime.value: cannot parse "${str}" — expected an ISO 8601 datetime with a UTC offset (e.g. "…Z" or "…+00:00")`,
          );
       }
 
@@ -341,7 +341,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const dateLabel = this.#isOrdinal ? "ordinal date" : "calendar date";
       if (!parsedDate) {
          throw new RangeError(
-            `nova-datetime.value: cannot parse "${datePart}" as ${dateLabel}`,
+            `nova-input-datetime.value: cannot parse "${datePart}" as ${dateLabel}`,
          );
       }
 
@@ -349,7 +349,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
       const t = parseTime(timePart);
       if (t && exceedsTimeSmallestUnit(t, this.#smallestUnit)) {
          throw new RangeError(
-            `nova-datetime.value: input precision exceeds smallest-unit="${this.#smallestUnit}"`,
+            `nova-input-datetime.value: input precision exceeds smallest-unit="${this.#smallestUnit}"`,
          );
       }
 
@@ -411,7 +411,7 @@ export class NovaDatetime extends NovaTemporalInputBase {
          this.setAllSegmentValues([...dateValues, ...timeValues], true);
          return;
       }
-      throw new RangeError(`nova-datetime.value: cannot parse "${s}" as datetime, date, or time`);
+      throw new RangeError(`nova-input-datetime.value: cannot parse "${s}" as datetime, date, or time`);
    }
 
    _compareValues(a, b) {
@@ -505,4 +505,4 @@ export class NovaDatetime extends NovaTemporalInputBase {
 
 }
 
-customElements.define("nova-datetime", NovaDatetime);
+customElements.define("nova-input-datetime", NovaInputDatetime);

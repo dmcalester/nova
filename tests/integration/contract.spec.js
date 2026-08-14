@@ -1,17 +1,17 @@
 import { test, expect } from '../helpers/coverage.js';
 
 const FIXTURES = {
-  'nova-datetime': '/tests/fixtures/nova-datetime.html',
-  'nova-ordinal-date': '/tests/fixtures/nova-ordinal-date.html',
-  'nova-duration': '/tests/fixtures/nova-duration.html',
+  'nova-input-datetime': '/tests/fixtures/nova-input-datetime.html',
+  'nova-input-ordinal-date': '/tests/fixtures/nova-input-ordinal-date.html',
+  'nova-input-duration': '/tests/fixtures/nova-input-duration.html',
 };
 
 // ── Setter type-check: wrong type throws ────────────────────────────────────
 
-test('nova-datetime.temporal = PlainDate throws TypeError', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('nova-input-datetime.temporal = PlainDate throws TypeError', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     document.body.appendChild(el);
     try {
       el.temporal = Temporal.PlainDate.from('2026-02-09');
@@ -25,10 +25,10 @@ test('nova-datetime.temporal = PlainDate throws TypeError', async ({ page }) => 
   expect(r.msg).toMatch(/Instant/);
 });
 
-test('nova-ordinal-date.temporal = PlainTime throws TypeError', async ({ page }) => {
-  await page.goto(FIXTURES['nova-ordinal-date']);
+test('nova-input-ordinal-date.temporal = PlainTime throws TypeError', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-ordinal-date']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-ordinal-date');
+    const el = document.createElement('nova-input-ordinal-date');
     el.setAttribute('value', '2026-040'); // year mode → PlainDate-typed
     document.body.appendChild(el);
     try {
@@ -42,10 +42,10 @@ test('nova-ordinal-date.temporal = PlainTime throws TypeError', async ({ page })
   expect(r.name).toBe('TypeError');
 });
 
-test('nova-duration.temporal = PlainDate throws TypeError', async ({ page }) => {
-  await page.goto(FIXTURES['nova-duration']);
+test('nova-input-duration.temporal = PlainDate throws TypeError', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-duration']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     document.body.appendChild(el);
     try {
       el.temporal = Temporal.PlainDate.from('2026-02-09');
@@ -58,10 +58,10 @@ test('nova-duration.temporal = PlainDate throws TypeError', async ({ page }) => 
   expect(r.name).toBe('TypeError');
 });
 
-test('nova-datetime.temporal = "string" throws TypeError', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('nova-input-datetime.temporal = "string" throws TypeError', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const threw = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     document.body.appendChild(el);
     try {
       el.temporal = '2026-02-09T14:30:00Z';
@@ -73,10 +73,10 @@ test('nova-datetime.temporal = "string" throws TypeError', async ({ page }) => {
   expect(threw).toBe(true);
 });
 
-test('nova-ordinal-date.temporal = PlainDate in day-only mode throws TypeError', async ({ page }) => {
-  await page.goto(FIXTURES['nova-ordinal-date']);
+test('nova-input-ordinal-date.temporal = PlainDate in day-only mode throws TypeError', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-ordinal-date']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-ordinal-date');
+    const el = document.createElement('nova-input-ordinal-date');
     el.setAttribute('value', '040');
     document.body.appendChild(el);
     try {
@@ -93,10 +93,10 @@ test('nova-ordinal-date.temporal = PlainDate in day-only mode throws TypeError',
 
 // ── Setter accepts the correct type ─────────────────────────────────────────
 
-test('nova-datetime.temporal = Instant sets the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('nova-input-datetime.temporal = Instant sets the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     document.body.appendChild(el);
     el.temporal = Temporal.Instant.from('2026-02-09T14:30:00Z');
     return el.value;
@@ -104,10 +104,10 @@ test('nova-datetime.temporal = Instant sets the value', async ({ page }) => {
   expect(v).toBe('2026-02-09T14:30:00Z');
 });
 
-test('nova-ordinal-date.temporal = PlainDate sets the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-ordinal-date']);
+test('nova-input-ordinal-date.temporal = PlainDate sets the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-ordinal-date']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-ordinal-date');
+    const el = document.createElement('nova-input-ordinal-date');
     el.setAttribute('value', '2026-040'); // year mode → PlainDate-typed
     document.body.appendChild(el);
     el.temporal = Temporal.PlainDate.from('2026-02-09');
@@ -116,10 +116,10 @@ test('nova-ordinal-date.temporal = PlainDate sets the value', async ({ page }) =
   expect(v).toBe('2026-040'); // ordinal form of 2026-02-09
 });
 
-test('nova-duration.temporal = Duration sets the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-duration']);
+test('nova-input-duration.temporal = Duration sets the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-duration']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     document.body.appendChild(el);
     el.temporal = Temporal.Duration.from('PT1H30M');
     return el.value;
@@ -129,10 +129,10 @@ test('nova-duration.temporal = Duration sets the value', async ({ page }) => {
 
 // ── Empty / null clear ──────────────────────────────────────────────────────
 
-test('nova-datetime.value = "" clears the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('nova-input-datetime.value = "" clears the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('value', '2026-02-09T14:30:00Z');
     document.body.appendChild(el);
     el.value = '';
@@ -142,10 +142,10 @@ test('nova-datetime.value = "" clears the value', async ({ page }) => {
   expect(r.temporal).toBeNull();
 });
 
-test('nova-datetime.value = null clears the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('nova-input-datetime.value = null clears the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('value', '2026-02-09T14:30:00Z');
     document.body.appendChild(el);
     el.value = null;
@@ -154,10 +154,10 @@ test('nova-datetime.value = null clears the value', async ({ page }) => {
   expect(v).toBe('');
 });
 
-test('nova-datetime.temporal = null clears the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('nova-input-datetime.temporal = null clears the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('value', '2026-02-09T14:30:00Z');
     document.body.appendChild(el);
     el.temporal = null;
@@ -166,10 +166,10 @@ test('nova-datetime.temporal = null clears the value', async ({ page }) => {
   expect(v).toBe('');
 });
 
-test('nova-ordinal-date.value = "" clears the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-ordinal-date']);
+test('nova-input-ordinal-date.value = "" clears the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-ordinal-date']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-ordinal-date');
+    const el = document.createElement('nova-input-ordinal-date');
     el.setAttribute('value', '2026-040');
     document.body.appendChild(el);
     el.value = '';
@@ -178,10 +178,10 @@ test('nova-ordinal-date.value = "" clears the value', async ({ page }) => {
   expect(v).toBe('');
 });
 
-test('nova-duration.value = "" clears the value', async ({ page }) => {
-  await page.goto(FIXTURES['nova-duration']);
+test('nova-input-duration.value = "" clears the value', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-duration']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('value', 'PT1H');
     document.body.appendChild(el);
     el.value = '';
@@ -190,10 +190,10 @@ test('nova-duration.value = "" clears the value', async ({ page }) => {
   expect(v).toBe('');
 });
 
-test('removeAttribute("value") clears nova-datetime', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('removeAttribute("value") clears nova-input-datetime', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const v = await page.evaluate(() => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('value', '2026-02-09T14:30:00Z');
     document.body.appendChild(el);
     el.removeAttribute('value');
@@ -205,11 +205,11 @@ test('removeAttribute("value") clears nova-datetime', async ({ page }) => {
 // ── value setter throws on garbage ──────────────────────────────────────────
 
 const garbageCases = [
-  { tag: 'nova-datetime', input: 'not a datetime' },
-  { tag: 'nova-datetime', input: '2026-13-01T00:00:00Z' },     // invalid month
-  { tag: 'nova-ordinal-date', input: 'not ordinal' },
-  { tag: 'nova-ordinal-date', input: '2025-366' },              // 2025 is not a leap year
-  { tag: 'nova-duration', input: 'not a duration' },
+  { tag: 'nova-input-datetime', input: 'not a datetime' },
+  { tag: 'nova-input-datetime', input: '2026-13-01T00:00:00Z' },     // invalid month
+  { tag: 'nova-input-ordinal-date', input: 'not ordinal' },
+  { tag: 'nova-input-ordinal-date', input: '2025-366' },              // 2025 is not a leap year
+  { tag: 'nova-input-duration', input: 'not a duration' },
 ];
 
 for (const { tag, input } of garbageCases) {
@@ -231,10 +231,10 @@ for (const { tag, input } of garbageCases) {
   });
 }
 
-test('nova-duration.value accepts calendar duration units', async ({ page }) => {
-  await page.goto(FIXTURES['nova-duration']);
+test('nova-input-duration.value accepts calendar duration units', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-duration']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'year');
     document.body.appendChild(el);
     el.value = 'P1Y2M4DT5H';
@@ -244,10 +244,10 @@ test('nova-duration.value accepts calendar duration units', async ({ page }) => 
   expect(r.temporal).toBe('P1Y2M4DT5H');
 });
 
-test('nova-duration.value rejects week-form durations (ISO-8601-1 weeks-only restriction)', async ({ page }) => {
-  await page.goto(FIXTURES['nova-duration']);
+test('nova-input-duration.value rejects week-form durations (ISO-8601-1 weeks-only restriction)', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-duration']);
   const r = await page.evaluate(() => {
-    const el = document.createElement('nova-duration');
+    const el = document.createElement('nova-input-duration');
     el.setAttribute('largest-unit', 'year');
     document.body.appendChild(el);
     let threw = null;
@@ -263,10 +263,10 @@ test('nova-duration.value rejects week-form durations (ISO-8601-1 weeks-only res
 
 // ── Paste handler tolerates bad input ───────────────────────────────────────
 
-test('paste of garbage into nova-datetime does not throw', async ({ page }) => {
-  await page.goto(FIXTURES['nova-datetime']);
+test('paste of garbage into nova-input-datetime does not throw', async ({ page }) => {
+  await page.goto(FIXTURES['nova-input-datetime']);
   const result = await page.evaluate(async () => {
-    const el = document.createElement('nova-datetime');
+    const el = document.createElement('nova-input-datetime');
     el.setAttribute('value', '2026-02-09T14:30:00Z');
     el.setAttribute('pattern', '');  // strict paste mode
     document.body.appendChild(el);
